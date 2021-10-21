@@ -231,9 +231,6 @@ for i = 1:length(t_dev_ori)
 end
 
 %% Linear interpret eye gaze stream into EEG stream
-% find out time point to interpt
-[interp_p, rm_idx] = linear_interp_idx(t_c, EEG.times);
-
 %% head rotation
 velocity_smooth_win_len = 40;
 srate = round(fix_struct.srate);
@@ -257,6 +254,8 @@ for v_i = vel_win_len+1:size(mv_hd,2)-vel_win_len
 end
 
 %% Interpretation
+% find out time point to interpt
+[interp_p, rm_idx] = linear_interp_idx(t_c, EEG.times);
 data_bus = [v_ang; fix_struct.eye_movement.right_ang_vel; data_struct.ori_pupil_diameter];
 name_list = {'Head Rot.', 'Eye Rot.', 'Pupil left', 'Pupil right'};
 interp_data = linear_interp_data(data_bus, interp_p, rm_idx);
