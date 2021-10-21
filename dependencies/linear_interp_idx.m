@@ -28,7 +28,7 @@ for t_i = 1:length(input_time)
     % ignore input_time less than 0 (before target_time start to record)
     if input_time(t_i) >= 0
         % find the interpretation point
-        tmp = find(target_time(tmp:end) >= input_time(t_i),1);
+        tmp = find(target_time(tmp+1:end) >= input_time(t_i),1)+tmp;
         if isempty(tmp)
             rm_idx(rm_i) = t_i;
             rm_i = rm_i+1;
