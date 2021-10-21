@@ -37,13 +37,23 @@ function fix_struct = cal_fix_pupil(test_data,srate,varargin)
 %
 % Output:
 %   fix_struct: structure contains eye related information
-%       pipeline_pars: parameters setting
-%       time_stamps: time stamps in eye gaze stream
-%       srate: sampling rate
-%       gap_detection: type of gaps (blink or data lose)
-%       reconstruct_3D_pos: reconstructed position for eye movement.
-%       eye_movement: puipl dispersion angle and angular velocity
-%       fixation: fixation index for eye movement.
+%       pipeline_pars:
+%           parameters setting for fixation calculation.
+%       time_stamps:
+%           time stamps in eye gaze stream.
+%       srate:
+%           eye tracker sampling rate.
+%       gap_detection:
+%           eye openess index and types of gaps (blink or data lose).
+%       reconstruct_3D_pos:
+%           reconstructed position for pupil location. (left_xyz, right_xyz by time)
+%       eye_movement:
+%           puipl dispersion angle and angular velocity.
+%       cali_eye_movement:
+%           puipl dispersion angle and angular velocity for the calibration data.
+%       eye_fixation:
+%           fixation index. Include using different eyes and different
+%           criteria (dispersion or velocity).
 
     %% parameter setting
     p = inputParser;

@@ -263,7 +263,7 @@ interp_data = linear_interp_data(data_bus, interp_p, rm_idx);
 
 %% add this information into EEG structure and create virtual channels
 for n_i = 1:length(name_list)
-    EEG = insert_data(EEG, interp_data(n_i,:), name_list{n_i});
+    EEG = insert_data(EEG, interp_data(n_i,:), name_list{});
 end
 
 %% epoching

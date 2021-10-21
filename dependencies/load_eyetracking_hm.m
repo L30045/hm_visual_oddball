@@ -1,4 +1,51 @@
 function [data_struct, EEG, s_eyeMarker, s_eyeGaze, s_event, s_EEG] = load_eyetracking_hm(filename)
+% Input:
+%       filename:
+%           file to be processed (.xdf)
+% Output:
+%       data_struct:
+%           contain the raw behavioral data from eye tracker, including:
+%           (1) ori_eye_2D_pos: pupil location from pupil camera. (left_xy
+%           and right_xy by time)
+%           (2) ori_eye_3D_pos: pupil location from pupil model. (left_xyz
+%           and right_xyz by time. Z-axis is perpendicular to the pupil
+%           surface.)
+%           (3) ori_gip_3D_pos: Gaze-Intersect-Point in VR environment. (xyz
+%           by time)
+%           (4) ori_head_3D_loc: head location in VR environment. (xyz by
+%           time)
+%           (5) ori_head_direct: head facing direction in VR environment.
+%           (normalized vector by time)
+%           (6) ori_head_vel: head moving velocity in VR environment.
+%           (velocity vector by time)
+%           (7) ori_head_rot: head rotation angular velocity in VR
+%           environment. (angular velocity vector by time) (Note: Haven't
+%           confirmed whether this parameter records angular velocity or
+%           angular accelration - Chi, 2021-Oct-20)
+%           (8) eye_openess_idx: eye openess index range in [0, 1]. Report
+%           -1 when eye is closed or the system loses track of the pupil
+%           location. (left and right by time)
+%           ori_pupil_diameter: pupil diameter. Report -1 when eye is
+%           closed or the system loses track of the pupil location. (left
+%           and right by time)
+%           (9) eyeMarker_name: GIP markers. Reporting the objects with
+%           its hitbox overlaps with subject's GIP.
+%           (10) eventMarker_name: event markers from experiment scripts.
+%           (11) pt_eg: time points for eye tracking data.
+%           (12) pt_em: time points for GIP markers.
+%           (13) pt_event: time points for event markers.
+%           (14) srate: eye tracker sampling rate
+%       EEG:
+%           EEG structure
+%       s_eyeMarker:
+%           GIP marker stream
+%       s_eyeGaze:
+%           eye tracking data stream
+%       s_event:
+%           experiment script event marker stream
+%       s_EEG:
+%           EEG stream
+
 %% load eye tracking data
 % load head rotation stream
 streams = load_xdf(filename);
@@ -50,6 +97,7 @@ for t_i = 1:length(pt_em)
     pt_em(t_i) = pt_eg(find(pt_eg>pt_em(t_i),1,'first'));
 end
 pt_event = s_event.time_stamps-s_eyeGaze.time_stamps(seg_range(1));
+eventMarker_name = s_event.time_series;
 pt_event(pt_event > max(pt_eg)) = [];
 % round up grab stream time stamps with eye gaze stream time stamps
 for t_i = 1:length(pt_event)
@@ -62,7 +110,7 @@ srate = 1/mean(diff(pt_eg));
 data_struct = struct('ori_eye_2D_pos',ori_eye_2D_pos,'ori_eye_3D_pos',ori_eye_3D_pos,...
     'ori_gip_3D_pos',ori_gip_3D_pos,'ori_head_3D_loc',ori_head_3D_loc,'ori_head_direct',ori_head_direct,...
     'ori_head_vel',ori_head_vel,'ori_head_rot',ori_head_rot,'eye_openess_idx',eye_openess_idx,...
-    'ori_pupil_diameter',ori_pupil_diameter,'eyeMarker_name',{eyeMarker_name},...
+    'ori_pupil_diameter',ori_pupil_diameter,'eyeMarker_name',{eyeMarker_name},'eventMarker_name',{eventMarker_name},...
     'pt_eg',pt_eg,'pt_em',pt_em,'pt_event',pt_event,'srate',srate);
 
 end
