@@ -25,8 +25,8 @@ interp_p = false(size(target_time));
 tmp = 1;
 % loop over input_time to find the corresponding time points on target_time
 for t_i = 1:length(input_time)
-    % ignore input_time less than 0 (before target_time start to record)
-    if input_time(t_i) >= 0
+    % ignore input_time before target_time start to record
+    if input_time(t_i) >= target_time(1)
         % find the interpretation point
         tmp = find(target_time(tmp+1:end) >= input_time(t_i),1)+tmp;
         if isempty(tmp)
