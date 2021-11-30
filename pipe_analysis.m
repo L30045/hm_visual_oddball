@@ -10,7 +10,7 @@ addpath(genpath('dependencies/'))
 
 
 %% epoch EZ
-subj_i = 4;
+subj_i = 1;
 EEG_noHm = pop_loadset([filepath,sprintf('s%02d_cond1_ica_k10.set',subj_i)]);
 EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
 [data_struct_noHm, fix_struct_noHm, t_c_noHm, t_std_noHm, t_dev_noHm, epoch_struct_noHm, EEG_noHm]...
@@ -20,7 +20,19 @@ EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
 save(sprintf('../dataset/s%02d_epoch.mat',subj_i),'epoch_struct_noHm','epoch_struct_Hm');
 
 %% calculate head rotation velocity and eye rotation velocity
-epoch_struct = epoch_struct_Hm;
+cond_i = 1;
+switch cond_i
+    case 1
+        epoch_struct = epoch_struct_noHm;
+        
+    case 2
+        epoch_struct = epoch_struct_Hm;
+end
+upLoc = [0.862, 2.101, 2.345; 0.862, 3.081, 2.345];
+downLoc = [0.862, 1.751, 2.345; 0.862, 0.7712, 2.345];
+leftLoc = [0.687, 1.926, 2.345; -0.2928, 1.926, 2.345];
+rightLoc = [1.037, 1.926, 2.345; 2.017, 1.926, 2.345];
+tar_lib = [upLoc(cond_i,:);downLoc(cond_i,:);leftLoc(cond_i,:);rightLoc(cond_i,:)];
 ev_list = fieldnames(epoch_struct);
 ev_list([4:6,9]) = [];
 ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;...
@@ -29,7 +41,25 @@ ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;..
               epoch_struct.event_time.dev_left; epoch_struct.event_time.dev_right]};
 dir_idx = [1,2,1,1,2];
     
-e_i = 5;
+e_i = 2;
+switch e_i
+    case 1
+        tname = 'Stim Lock (Circle)';
+        tlock = 'Stim';
+    case 2
+        tname = 'Stim Lock (Triangle)';
+        tlock = 'Stim';
+    case 3
+        tname = 'Response Lock (Circle)';
+        tlock = 'Response';
+    case 4
+        tname = 'GIP Lock (Circle)';
+        tlock = 'GIP';
+    case 5
+        tname = 'GIP Lock (Triangle)';
+        tlock = 'GIP';
+end
+        
 tar_epoch = getfield(epoch_struct,ev_list{e_i});
 nbchan = find(ismember({tar_epoch.chanlocs.labels},'HeadLoc_x'));
 tar_direct = ev_direct{dir_idx(e_i)};
@@ -47,20 +77,48 @@ GIP = tar_epoch.data(nbchan+6:nbchan+8,:,:);
 %     blink_idx = tar_epoch.data(nbchan+9,:,:);
 %     dataLose_idx = tar_epoch.data(nbchan+10,:,:);
 eyeDirect = tar_epoch.data(nbchan+11:nbchan+13,:,:);
+% calculate GIP distance
+dist_gip2box = dist2Box(GIP, headLoc, tar_lib, tar_direct);
 
 % calculate rotation
 [headAng, headRot, headAngDiff, headAngCumsum] = cal_rot(headDirect, tar_direct, tar_epoch.srate);
 [eyeAng, eyeRot, eyeAngDiff, eyeAngCumsum] = cal_rot(eyeDirect, tar_direct, tar_epoch.srate);
 [gipAng, gipRot, gipAngDiff, gipAngCumsum] = cal_rot(GIP, tar_direct, tar_epoch.srate);
 
-% sanity check
-figure; shadedErrorBar(tar_epoch.times,eyeAngDiff', {@nanmean, @nanstd}, 'lineprops','b-'); grid on; hold on;
-shadedErrorBar(tar_epoch.times,headAngDiff', {@nanmean, @nanstd}, 'lineprops','r-')
-shadedErrorBar(tar_epoch.times,gipAngDiff', {@nanmean, @nanstd}, 'lineprops','k-')
 
-figure; shadedErrorBar(tar_epoch.times,eyeAng', {@nanmean, @nanstd}, 'lineprops','b-'); grid on; hold on;
-shadedErrorBar(tar_epoch.times,headAng', {@nanmean, @nanstd}, 'lineprops','r-')
-shadedErrorBar(tar_epoch.times,gipAng', {@nanmean, @nanstd}, 'lineprops','k-')
+%% sanity check
+figure;
+% normalized distance
+plt_dist = (dist_gip2box-min(dist_gip2box,[],1))./(max(dist_gip2box,[],1)+min(dist_gip2box,[],1));
+scale = 1; %max(mean(eyeAngDiff,2));
+plt_dist = plt_dist * scale;
+shadedErrorBar(tar_epoch.times,eyeAngDiff', {@nanmean, @nanstd}, 'lineprops',{'b-','DisplayName','EyeAngDiff','linewidth',3});
+grid on; hold on;
+shadedErrorBar(tar_epoch.times,headAngDiff', {@nanmean, @nanstd}, 'lineprops',{'r-','DisplayName','HeadAngDiff','linewidth',3})
+shadedErrorBar(tar_epoch.times,gipAngDiff', {@nanmean, @nanstd}, 'lineprops',{'k-','DisplayName','GIPAngDiff','linewidth',3})
+shadedErrorBar(tar_epoch.times,plt_dist', {@nanmean, @nanstd}, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+xline(0,'k--','linewidth',3,'DisplayName',tlock);
+title(tname);
+set(gca,'fontsize',20)
+xlabel('Time (ms)')
+ylabel('Angle (deg)')
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+
+figure;
+plt_dist = (dist_gip2box-min(dist_gip2box,[],1))./(max(dist_gip2box,[],1)+min(dist_gip2box,[],1));
+scale = max(mean(eyeAng,2));
+plt_dist = plt_dist * scale;
+shadedErrorBar(tar_epoch.times,eyeAng', {@nanmean, @nanstd}, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
+grid on; hold on;
+shadedErrorBar(tar_epoch.times,headAng', {@nanmean, @nanstd}, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
+shadedErrorBar(tar_epoch.times,gipAng', {@nanmean, @nanstd}, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
+shadedErrorBar(tar_epoch.times,plt_dist', {@nanmean, @nanstd}, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+xline(0,'k--','linewidth',3,'DisplayName',tlock);
+title(tname);
+set(gca,'fontsize',20)
+xlabel('Time (ms)')
+ylabel('Angle (deg)')
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
 
 
 %%
@@ -314,9 +372,9 @@ title(sprintf('%s lock (%s)', ev_name, tar_Ch))
 
 %% cross subjects erp
 cond_name = 'Hm';
-ev_name = 'gip';
+ev_name = 'grab';
 tar_Ch = 'Cz';
-subj_list = [1,3,4,5];
+subj_list = [1,4,5,6];
 
 switch ev_name
     case 'stim'
@@ -341,29 +399,33 @@ for i = 1:length(subj_list)
         case 'gip'
             tri_epoch = cond_struct.gip_dev;
             cir_epoch = cond_struct.gip_std;
+        case 'grab'
+            tri_epoch = cond_struct.gip_dev;
+            cir_epoch = cond_struct.grab_epoch;
+            
     end
     ch_idx = find(ismember({tri_epoch.chanlocs.labels},tar_Ch));
     plt_t = tri_epoch.times;
     tri_lib(i,:) = mean(squeeze(tri_epoch.data(ch_idx,:,:)),2);
     cir_lib(i,:) = mean(squeeze(cir_epoch.data(ch_idx,:,:)),2);
-    eye_lib(i,:) = nanmean(squeeze(tri_epoch.data(end-2,:,:)),2);
-    head_lib(i,:) = nanmean(squeeze(cir_epoch.data(end-3,:,:)),2);
+    eye_lib(i,:) = nanmean([squeeze(cir_epoch.data(end-2,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2);
+    head_lib(i,:) = nanmean([squeeze(cir_epoch.data(end-3,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2);
 end
 
 %
-sf = 10;
+sf = 1;
 neye_lib = sf*((eye_lib-min(eye_lib,[],'all'))./(max(eye_lib,[],'all')-min(eye_lib,[],'all')));
 neye_lib = neye_lib - min(neye_lib,[],'all');
 nhead_lib = sf*((head_lib-min(head_lib,[],'all'))./(max(head_lib,[],'all')-min(head_lib,[],'all')));
 nhead_lib = nhead_lib - min(nhead_lib,[],'all');
 %
 figure
-ht = shadedErrorBar(plt_t, tri_lib, {@nanmean, @nanstd},...
-    {'color','b','linewidth',3,'DisplayName','Triangle'});
-ht.patch.FaceAlpha = 0.3;
+% ht = shadedErrorBar(plt_t, tri_lib, {@nanmean, @nanstd},'lineprops',...
+%     {'color','b','linewidth',3,'DisplayName','Triangle'});
+% ht.patch.FaceAlpha = 0.3;
 grid on
 hold on
-hc = shadedErrorBar(plt_t, cir_lib, {@nanmean, @nanstd},...
+hc = shadedErrorBar(plt_t, cir_lib, {@nanmean, @nanstd},'lineprops',...
     {'color','r','linewidth',3,'DisplayName','Circle'});
 hc.patch.FaceAlpha = 0.3;
 % he = shadedErrorBar(plt_t, neye_lib, {@nanmean, @nanstd},...

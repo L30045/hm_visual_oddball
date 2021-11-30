@@ -113,19 +113,31 @@ fprintf('Max error: %.f ms\n',max(t_dev-t_dev_ori))
 %% find up/down left/right event
 %boolean arrays where the LEFT/RIGHT or UP/DOWN event markers occured (I assumed
 %they were mutually trail exclusive i.e. both do not occur in the same trail)
-up_idx = cellfun(@(x) ~isempty(regexp(x,'(0.862, 2.101, 2.345)','match','ONCE')),{EEG.event.type}) +...
-         cellfun(@(x) ~isempty(regexp(x,'(0.862, 3.081, 2.345)','match','ONCE')),{EEG.event.type});
-down_idx = cellfun(@(x) ~isempty(regexp(x,'(0.862, 1.751, 2.345)','match','ONCE')),{EEG.event.type}) +...
-           cellfun(@(x) ~isempty(regexp(x,'(0.862, 0.7712, 2.345)','match','ONCE')),{EEG.event.type});
-left_idx = cellfun(@(x) ~isempty(regexp(x,'(0.687, 1.926, 2.345)','match','ONCE')),{EEG.event.type}) +...
-           cellfun(@(x) ~isempty(regexp(x,'(-0.2928, 1.926, 2.345)','match','ONCE')),{EEG.event.type});
-right_idx = cellfun(@(x) ~isempty(regexp(x,'(1.037, 1.926, 2.345)','match','ONCE')),{EEG.event.type}) +...
-            cellfun(@(x) ~isempty(regexp(x,'(2.017, 1.926, 2.345)','match','ONCE')),{EEG.event.type});
 
-upLoc = [0.862, 2.101, 2.345];
-downLoc = [0.862, 1.751, 2.345];
-leftLoc = [0.687, 1.926, 2.345];
-rightLoc = [1.037, 1.926, 2.345];
+% gather 4 location
+tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,'(','ONCE')),{EEG.event.type})).type});
+tar_ev = cellfun(@split ,unique(cellfun(@(x) x(regexp(x,'(')+1:end-1), tar_ev, 'uniformoutput',0)),'uniformoutput',0);
+tar_ev(cellfun(@length,tar_ev)==1) = [];
+num_loc = zeros(3,4);
+for i = 1:4
+    tmp = tar_ev{i};
+    num_loc(1,i) = str2double(tmp{1}(1:end-1));
+    num_loc(2,i) = str2double(tmp{2}(1:end-1));
+    num_loc(3,i) = str2double(tmp{3});
+end
+num_loc = sortrows(num_loc');
+
+upLoc = num_loc(3,:);
+downLoc = num_loc(2,:);
+leftLoc = num_loc(1,:);
+rightLoc = num_loc(4,:);
+
+up_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',upLoc),'match','ONCE')),{EEG.event.type});
+down_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',downLoc),'match','ONCE')),{EEG.event.type});
+left_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',leftLoc),'match','ONCE')),{EEG.event.type});
+right_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',rightLoc),'match','ONCE')),{EEG.event.type});
+
+
 
 std_up = up_idx(idx_std);
 std_down = down_idx(idx_std);
@@ -141,11 +153,11 @@ dev_right = right_idx(idx_dev);
 % bot_idx = cellfun(@(x) ~isempty(regexp(x,'(0.862, 1.751, 2.345)','match','ONCE')),{EEG_ica.event.type});
 % left_idx = cellfun(@(x) ~isempty(regexp(x,'(0.687, 1.926, 2.345)','match','ONCE')),{EEG_ica.event.type});
 % right_idx = cellfun(@(x) ~isempty(regexp(x,'(1.037, 1.926, 2.345)','match','ONCE')),{EEG_ica.event.type});
-up_idx = cellfun(@(x) ~isempty(regexp(x,'Up','match','ONCE')),{EEG.event.type});
-bot_idx = cellfun(@(x) ~isempty(regexp(x,'Bottom','match','ONCE')),{EEG.event.type});
-left_idx = cellfun(@(x) ~isempty(regexp(x,'Left','match','ONCE')),{EEG.event.type});
-right_idx = cellfun(@(x) ~isempty(regexp(x,'Right','match','ONCE')),{EEG.event.type});
-gip_idx = find(up_idx | bot_idx | left_idx | right_idx);
+gip_up_idx = cellfun(@(x) ~isempty(regexp(x,'Up','match','ONCE')),{EEG.event.type});
+gip_down_idx = cellfun(@(x) ~isempty(regexp(x,'Bottom','match','ONCE')),{EEG.event.type});
+gip_left_idx = cellfun(@(x) ~isempty(regexp(x,'Left','match','ONCE')),{EEG.event.type});
+gip_right_idx = cellfun(@(x) ~isempty(regexp(x,'Right','match','ONCE')),{EEG.event.type});
+gip_idx = find(gip_up_idx | gip_down_idx | gip_left_idx | gip_right_idx);
 
 % find the first fixation after stimulus
 % find out stimulus onset time
