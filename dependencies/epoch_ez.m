@@ -69,10 +69,21 @@ else
 end
 nbchan = EEG.nbchan;
 
+% Prevent event marker error 
+cond_i = EEG.filename(9);
+switch cond_i
+    case '1'
+        reg_txt = 'Ring 0';
+    case '2'
+        reg_txt = 'Ring 1';
+end
 
 %% find out stimulus onset time
+idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type});
 idx_dev = cellfun(@(x) ~isempty(regexp(x, 'Deviant', 'ONCE')), {EEG.event.type});
+idx_dev = idx_dev & idx_cond;
 idx_std = cellfun(@(x) ~isempty(regexp(x, 'Standard', 'ONCE')), {EEG.event.type});
+idx_std = idx_std & idx_cond;
 idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type});
 idx_tri(find(idx_tri,2,'last')) = false;
 std_ev = {EEG.event(idx_std).type};
@@ -115,9 +126,8 @@ fprintf('Max error: %.f ms\n',max(t_dev-t_dev_ori))
 %they were mutually trail exclusive i.e. both do not occur in the same trail)
 
 % gather 4 location
-tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,'(','ONCE')),{EEG.event.type})).type});
+tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,reg_txt,'ONCE')),{EEG.event.type})).type});
 tar_ev = cellfun(@split ,unique(cellfun(@(x) x(regexp(x,'(')+1:end-1), tar_ev, 'uniformoutput',0)),'uniformoutput',0);
-tar_ev(cellfun(@length,tar_ev)==1) = [];
 num_loc = zeros(3,4);
 for i = 1:4
     tmp = tar_ev{i};
@@ -371,7 +381,6 @@ gip_dev = pop_epoch(EEG,{'triangle_gip_start'},len_epoch_grab/1000, 'epochinfo',
 % save behavioral data
 behavi_std = std_epoch.data(nbchan+1:end,:,:);
 behavi_dev = dev_epoch.data(nbchan+1:end,:,:);
-behavi_grab = grab_epoch.data(nbchan+1:end,:,:);
 behavi_fixAll = fix_epoch.data(nbchan+1:end,:,:);
 behavi_fstd = fix_std.data(nbchan+1:end,:,:);
 behavi_fdev = fix_dev.data(nbchan+1:end,:,:);
@@ -380,7 +389,6 @@ behavi_gdev = gip_dev.data(nbchan+1:end,:,:);
 % remove baseline
 std_epoch = pop_rmbase(std_epoch,[len_epoch(1) 0],[]);
 dev_epoch = pop_rmbase(dev_epoch,[len_epoch(1) 0],[]);
-grab_epoch = pop_rmbase(grab_epoch,[len_epoch_grab(1) 0],[]);
 fix_epoch = pop_rmbase(fix_epoch,[len_epoch_grab(1) 0],[]);
 fix_std = pop_rmbase(fix_std,[len_epoch_grab(1) 0],[]);
 fix_dev = pop_rmbase(fix_dev,[len_epoch_grab(1) 0],[]);
@@ -389,12 +397,17 @@ gip_dev = pop_rmbase(gip_dev,[len_epoch_grab(1) 0],[]);
 % restore behavioral data
 std_epoch.data(nbchan+1:end,:,:) = behavi_std;
 dev_epoch.data(nbchan+1:end,:,:) = behavi_dev;
-grab_epoch.data(nbchan+1:end,:,:) = behavi_grab;
 fix_epoch.data(nbchan+1:end,:,:) = behavi_fixAll;
 fix_std.data(nbchan+1:end,:,:) = behavi_fstd;
 fix_dev.data(nbchan+1:end,:,:) = behavi_fdev;
 gip_std.data(nbchan+1:end,:,:) = behavi_gstd;
 gip_dev.data(nbchan+1:end,:,:) = behavi_gdev;
+% some data missing grab event markers
+if ~isempty(grab_epoch)
+    behavi_grab = grab_epoch.data(nbchan+1:end,:,:);
+    grab_epoch = pop_rmbase(grab_epoch,[len_epoch_grab(1) 0],[]);
+    grab_epoch.data(nbchan+1:end,:,:) = behavi_grab;
+end
 
 %% epoch auto rejection
 % std_epoch = pop_autorej(std_epoch,'electrodes',1:EEG_ica.nbchan-2,'nogui','on');

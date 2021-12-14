@@ -5,7 +5,7 @@ eegpath = which('eeglab');
 cd(eegpath(1:regexp(eegpath,'eeglab.m')-1))
 eeglab
 cd(c_path)
-filepath = '../dataset/';
+filepath = 'E:\hm_visual_oddball\dataset\';
 addpath(genpath('dependencies/'))
 
 
@@ -17,7 +17,7 @@ EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
 = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond1.xdf',subj_i)], EEG_noHm);
 [data_struct_Hm, fix_struct_Hm, t_c_Hm, t_std_Hm, t_dev_Hm, epoch_struct_Hm, EEG_Hm]...
 = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond2.xdf',subj_i)], EEG_Hm);
-save(sprintf('../dataset/s%02d_epoch.mat',subj_i),'epoch_struct_noHm','epoch_struct_Hm');
+save([filepath,sprintf('s%02d_epoch.mat',subj_i)],'epoch_struct_noHm','epoch_struct_Hm');
 
 %% calculate head rotation velocity and eye rotation velocity
 cond_i = 1;
@@ -28,11 +28,11 @@ switch cond_i
     case 2
         epoch_struct = epoch_struct_Hm;
 end
-upLoc = [0.862, 2.101, 2.345; 0.862, 3.081, 2.345];
-downLoc = [0.862, 1.751, 2.345; 0.862, 0.7712, 2.345];
-leftLoc = [0.687, 1.926, 2.345; -0.2928, 1.926, 2.345];
-rightLoc = [1.037, 1.926, 2.345; 2.017, 1.926, 2.345];
-tar_lib = [upLoc(cond_i,:);downLoc(cond_i,:);leftLoc(cond_i,:);rightLoc(cond_i,:)];
+upLoc = epoch_struct.event_time.upLoc;
+downLoc = epoch_struct.event_time.downLoc;
+leftLoc = epoch_struct.event_time.leftLoc;
+rightLoc = epoch_struct.event_time.rightLoc;
+tar_lib = [upLoc;downLoc;leftLoc;rightLoc];
 ev_list = fieldnames(epoch_struct);
 ev_list([4:6,9]) = [];
 ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;...
@@ -41,7 +41,7 @@ ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;..
               epoch_struct.event_time.dev_left; epoch_struct.event_time.dev_right]};
 dir_idx = [1,2,1,1,2];
     
-e_i = 2;
+e_i = 5;
 switch e_i
     case 1
         tname = 'Stim Lock (Circle)';
@@ -60,7 +60,7 @@ switch e_i
         tlock = 'GIP';
 end
         
-tar_epoch = getfield(epoch_struct,ev_list{e_i});
+tar_epoch = epoch_struct.(ev_list{e_i});
 nbchan = find(ismember({tar_epoch.chanlocs.labels},'HeadLoc_x'));
 tar_direct = ev_direct{dir_idx(e_i)};
 if e_i == 4
@@ -87,16 +87,17 @@ dist_gip2box = dist2Box(GIP, headLoc, tar_lib, tar_direct);
 
 
 %% sanity check
+shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
 figure;
 % normalized distance
 plt_dist = (dist_gip2box-min(dist_gip2box,[],1))./(max(dist_gip2box,[],1)+min(dist_gip2box,[],1));
 scale = 1; %max(mean(eyeAngDiff,2));
 plt_dist = plt_dist * scale;
-shadedErrorBar(tar_epoch.times,eyeAngDiff', {@nanmean, @nanstd}, 'lineprops',{'b-','DisplayName','EyeAngDiff','linewidth',3});
+shadedErrorBar(tar_epoch.times,eyeAngDiff', shaded_method, 'lineprops',{'b-','DisplayName','EyeAngDiff','linewidth',3});
 grid on; hold on;
-shadedErrorBar(tar_epoch.times,headAngDiff', {@nanmean, @nanstd}, 'lineprops',{'r-','DisplayName','HeadAngDiff','linewidth',3})
-shadedErrorBar(tar_epoch.times,gipAngDiff', {@nanmean, @nanstd}, 'lineprops',{'k-','DisplayName','GIPAngDiff','linewidth',3})
-shadedErrorBar(tar_epoch.times,plt_dist', {@nanmean, @nanstd}, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+shadedErrorBar(tar_epoch.times,headAngDiff', shaded_method, 'lineprops',{'r-','DisplayName','HeadAngDiff','linewidth',3})
+shadedErrorBar(tar_epoch.times,gipAngDiff', shaded_method, 'lineprops',{'k-','DisplayName','GIPAngDiff','linewidth',3})
+shadedErrorBar(tar_epoch.times,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
 xline(0,'k--','linewidth',3,'DisplayName',tlock);
 title(tname);
 set(gca,'fontsize',20)
@@ -106,13 +107,13 @@ legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
 
 figure;
 plt_dist = (dist_gip2box-min(dist_gip2box,[],1))./(max(dist_gip2box,[],1)+min(dist_gip2box,[],1));
-scale = max(mean(eyeAng,2));
+scale = max(mean(eyeAng,2,'omitnan'));
 plt_dist = plt_dist * scale;
-shadedErrorBar(tar_epoch.times,eyeAng', {@nanmean, @nanstd}, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
+shadedErrorBar(tar_epoch.times,eyeAng', shaded_method, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
 grid on; hold on;
-shadedErrorBar(tar_epoch.times,headAng', {@nanmean, @nanstd}, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
-shadedErrorBar(tar_epoch.times,gipAng', {@nanmean, @nanstd}, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
-shadedErrorBar(tar_epoch.times,plt_dist', {@nanmean, @nanstd}, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+shadedErrorBar(tar_epoch.times,headAng', shaded_method, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
+shadedErrorBar(tar_epoch.times,gipAng', shaded_method, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
+shadedErrorBar(tar_epoch.times,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
 xline(0,'k--','linewidth',3,'DisplayName',tlock);
 title(tname);
 set(gca,'fontsize',20)
@@ -260,7 +261,9 @@ title('Rotation timing comparison')
 % plot GIP-locked event
 
 %% compare standard and deviant event
-cond_name = 'noHm';
+subj_i = 1;
+load(sprintf('s%02d_epoch.mat',subj_i));
+cond_name = 'Hm';
 eval(sprintf('cond_struct = epoch_struct_%s;',cond_name));
 % get mean gip time
 tri_epoch = cond_struct.dev_epoch;
@@ -287,11 +290,11 @@ switch cond_name
     case 'Hm'
         tri_lat_Hm = tri_lat;
         cir_lat_Hm = cir_lat;
-        save(sprintf('../dataset/s%02d_epoch.mat',subj_i),'tri_lat_Hm','cir_lat_Hm','-append')
+        save([filepath,sprintf('s%02d_epoch.mat',subj_i)],'tri_lat_Hm','cir_lat_Hm','-append')
     case 'noHm'
         tri_lat_noHm = tri_lat;
         cir_lat_noHm = cir_lat;
-        save(sprintf('../dataset/s%02d_epoch.mat',subj_i),'tri_lat_noHm','cir_lat_noHm','-append')
+        save([filepath,sprintf('s%02d_epoch.mat',subj_i)],'tri_lat_noHm','cir_lat_noHm','-append')
 end
 
 %%
@@ -369,81 +372,5 @@ set(gca,'xtick',plt_t(1):100:plt_t(end))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
 title(sprintf('%s lock (%s)', ev_name, tar_Ch))
-
-%% cross subjects erp
-cond_name = 'Hm';
-ev_name = 'grab';
-tar_Ch = 'Cz';
-subj_list = [1,4,5,6];
-
-switch ev_name
-    case 'stim'
-        tri_lib = zeros(length(subj_list),600);
-        cir_lib = zeros(length(subj_list),600);
-        eye_lib = zeros(length(subj_list),600);
-        head_lib = zeros(length(subj_list),600);
-    case 'gip'
-        tri_lib = zeros(length(subj_list),750);
-        cir_lib = zeros(length(subj_list),750);
-        eye_lib = zeros(length(subj_list),750);
-        head_lib = zeros(length(subj_list),750);
-end
-
-for i = 1:length(subj_list)
-    load(sprintf('../dataset/s%02d_epoch.mat',subj_list(i)),sprintf('epoch_struct_%s',cond_name));
-    eval(sprintf('cond_struct = epoch_struct_%s;',cond_name));
-    switch ev_name
-        case 'stim'
-            tri_epoch = cond_struct.dev_epoch;
-            cir_epoch = cond_struct.std_epoch;
-        case 'gip'
-            tri_epoch = cond_struct.gip_dev;
-            cir_epoch = cond_struct.gip_std;
-        case 'grab'
-            tri_epoch = cond_struct.gip_dev;
-            cir_epoch = cond_struct.grab_epoch;
-            
-    end
-    ch_idx = find(ismember({tri_epoch.chanlocs.labels},tar_Ch));
-    plt_t = tri_epoch.times;
-    tri_lib(i,:) = mean(squeeze(tri_epoch.data(ch_idx,:,:)),2);
-    cir_lib(i,:) = mean(squeeze(cir_epoch.data(ch_idx,:,:)),2);
-    eye_lib(i,:) = nanmean([squeeze(cir_epoch.data(end-2,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2);
-    head_lib(i,:) = nanmean([squeeze(cir_epoch.data(end-3,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2);
-end
-
-%
-sf = 1;
-neye_lib = sf*((eye_lib-min(eye_lib,[],'all'))./(max(eye_lib,[],'all')-min(eye_lib,[],'all')));
-neye_lib = neye_lib - min(neye_lib,[],'all');
-nhead_lib = sf*((head_lib-min(head_lib,[],'all'))./(max(head_lib,[],'all')-min(head_lib,[],'all')));
-nhead_lib = nhead_lib - min(nhead_lib,[],'all');
-%
-figure
-% ht = shadedErrorBar(plt_t, tri_lib, {@nanmean, @nanstd},'lineprops',...
-%     {'color','b','linewidth',3,'DisplayName','Triangle'});
-% ht.patch.FaceAlpha = 0.3;
-grid on
-hold on
-hc = shadedErrorBar(plt_t, cir_lib, {@nanmean, @nanstd},'lineprops',...
-    {'color','r','linewidth',3,'DisplayName','Circle'});
-hc.patch.FaceAlpha = 0.3;
-% he = shadedErrorBar(plt_t, neye_lib, {@nanmean, @nanstd},...
-%     {'color','m','linewidth',1,'DisplayName','Eye rot.'});
-% he.patch.FaceAlpha = 0.3;
-% hh = shadedErrorBar(plt_t, nhead_lib, {@nanmean, @nanstd},...
-%     {'color','g','linewidth',1,'DisplayName','Head rot.'});
-% hh.patch.FaceAlpha = 0.3;
-plot(plt_t, nanmean(neye_lib,1),'color','m','linewidth',1,'DisplayName','Eye rot.');
-plot(plt_t, nanmean(nhead_lib,1),'color','g','linewidth',1,'DisplayName','Head rot.');
-xline(0,'k-','DisplayName',ev_name,'linewidth',3)
-legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
-set(gca,'fontsize',30)
-set(gca,'xtick',plt_t(1):100:plt_t(end))
-xlabel('Time (ms)')
-ylabel('Amplitude (\muV)')
-title(sprintf('%s lock (%s)', ev_name, tar_Ch))
-
-
 
 
