@@ -87,7 +87,7 @@ function fix_struct = cal_fix_pupil(test_data,srate,varargin)
                                                                 'right_ang_fix_idx',[],'right_v_ang_fix_idx',[]));
 	
 	% addpath to dependencies
-    addpath('dependencies/')
+%     addpath('dependencies/')
                                        
     %% extract data from parse
     cali_data = pipe_pars.calibration_data;

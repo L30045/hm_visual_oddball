@@ -7,11 +7,11 @@ for i = 1:length(subj_list)
     epoch_lib{1,i} = epoch_struct_noHm;
     epoch_lib{2,i} = epoch_struct_Hm;
 end
-% save('epoch_lib.mat','epoch_lib');
+save('epoch_lib_v2.mat','epoch_lib');
 
 %%
-cond_name = 'Hm';
-ev_name = 'gip';
+cond_name = 'noHm';
+ev_name = 'fix';
 tar_Ch = 'Cz';
 subj_list = [1,4:6,8:10];
 
@@ -29,7 +29,7 @@ switch ev_name
         cir_lib = zeros(length(subj_list),len_gip);
         eye_lib = zeros(length(subj_list),len_gip);
         head_lib = zeros(length(subj_list),len_gip);
-    case 'grab'
+    case 'fix'
         tri_lib = zeros(length(subj_list),len_gip);
         cir_lib = zeros(length(subj_list),len_gip);
         eye_lib = zeros(length(subj_list),len_gip);
@@ -50,9 +50,9 @@ for i = 5:length(subj_list)
         case 'gip'
             tri_epoch = cond_struct.gip_dev;
             cir_epoch = cond_struct.gip_std;
-        case 'grab'
-            tri_epoch = cond_struct.gip_dev;
-            cir_epoch = cond_struct.grab_epoch;
+        case 'fix'
+            tri_epoch = cond_struct.fix_dev;
+            cir_epoch = cond_struct.fix_std;
             
     end
     ch_idx = find(ismember({tri_epoch.chanlocs.labels},tar_Ch));
@@ -168,13 +168,13 @@ for subj_i = 1:length(subj_list)
         leftLoc = epoch_struct.event_time.leftLoc;
         rightLoc = epoch_struct.event_time.rightLoc;
         tar_lib = [upLoc;downLoc;leftLoc;rightLoc];
-        ev_list = fieldnames(epoch_struct);
-        ev_list([3:6,9]) = [];
+%         ev_list = fieldnames(epoch_struct);
+        ev_list = {'std_epoch','dev_epoch','gip_std','gip_dev'};
         ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;...
                       epoch_struct.event_time.std_left; epoch_struct.event_time.std_right];...
                      [epoch_struct.event_time.dev_up;epoch_struct.event_time.dev_down;...
                       epoch_struct.event_time.dev_left; epoch_struct.event_time.dev_right]};
-        dir_idx = [1,2,1,1,2];
+        dir_idx = [1,2,1,2];
 
         for e_i = 1:4
             tar_epoch = epoch_struct.(ev_list{e_i});
@@ -211,12 +211,12 @@ for subj_i = 1:length(subj_list)
 end
 disp('Done')
 com = 'Dimension: [std_epoch,dev_epoch,gip_std,gip_dev] * subject * condition. Ang_lib cell: [head, eye, gip]';
-save('behav_lib','ang_lib','angDiff_lib','dist_lib','com');
+save('behav_lib_v2.mat','ang_lib','angDiff_lib','dist_lib','com');
 
 
 %% plot behavior for each condition
 cond_i = 2;
-ev_name = 'gip';
+ev_name = 'stim';
 
 switch ev_name
     case 'stim'
@@ -259,10 +259,15 @@ for e_i = 1
         tmp_angDiff, 'uniformoutput',0));
     plt_g_ad = cell2mat(cellfun(@(x) mean(x{3},2,'omitnan'),...
         tmp_angDiff, 'uniformoutput',0));
+    % angle speed
+    plt_h_as = plt_h_ad*500;
+    plt_e_as = plt_e_ad*500;
+    plt_g_as = plt_g_ad*500;
 
     shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
     my_norm = @(x)((x-min(x,[],1))./(max(x,[],1)-min(x,[],1)));
-
+    
+    % angle
     figure;
     % normalized distance
     plt_dist = my_norm(plt_dist_ori);
@@ -276,10 +281,12 @@ for e_i = 1
     xline(0,'k--','linewidth',3,'DisplayName',ev_name);
     title(sprintf('%s lock - %s (%s)',ev_name, trial_name, cond_name));
     set(gca,'fontsize',20)
+    set(gcf,'color','w')
     xlabel('Time (ms)')
     ylabel('Angle (deg)')
     legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-
+    
+    % angle difference
     figure;
     plt_dist = my_norm(plt_dist_ori);
     scale = max(mean(plt_e_a,2,'omitnan'));
@@ -292,8 +299,27 @@ for e_i = 1
     xline(0,'k--','linewidth',3,'DisplayName',ev_name);
     title(sprintf('%s lock - %s (%s)',ev_name, trial_name, cond_name));
     set(gca,'fontsize',20)
+    set(gcf,'color','w')
     xlabel('Time (ms)')
     ylabel('Angle (deg)')
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+    
+    % angle speed
+    figure;
+    plt_dist = my_norm(plt_dist_ori);
+    scale = max(mean(plt_e_as,2,'omitnan'));
+    plt_dist = plt_dist * scale;
+    shadedErrorBar(plt_t,plt_e_as', shaded_method, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
+    grid on; hold on;
+    shadedErrorBar(plt_t,plt_h_as', shaded_method, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
+%     shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
+    shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+    xline(0,'k--','linewidth',3,'DisplayName',ev_name);
+    title(sprintf('%s lock - %s (%s)',ev_name, trial_name, cond_name));
+    set(gca,'fontsize',20)
+    set(gcf,'color','w')
+    xlabel('Time (ms)')
+    ylabel('Angular Speed (deg/sec)')
     legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
 
 end
@@ -368,15 +394,16 @@ legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
 cond_i = 2;
 switch cond_i
     case 1
-        cond_name = 'noHm';
+        cond_name = 'w/o Head Moving';
     case 2
-        cond_name = 'Hm';
+        cond_name = 'w/ Head Moving';
 end
 time_thres = 2000; %msec
 diff_gip_std = cell2mat(cellfun(@(x) x.event_time.diff_gip_std, epoch_lib(cond_i,:),'uniformoutput',0));
 diff_gip_dev = cell2mat(cellfun(@(x) x.event_time.diff_gip_dev, epoch_lib(cond_i,:),'uniformoutput',0));
-diff_stim_grab = cell2mat(cellfun(@(x) x.event_time.diff_stim_grab, epoch_lib(cond_i,:),'uniformoutput',0));
-diff_grab_gip = -(diff_gip_std+diff_stim_grab);
+diff_stim_grab = cell2mat(cellfun(@(x) x.event_time.diff_stim_grab, epoch_lib(cond_i,:),'uniformoutput',0)); % grab time - stim time (sec)
+diff_stim_grab = diff_stim_grab*1000;
+diff_grab_gip = diff_stim_grab-diff_gip_std;
 
 diff_gip_std(diff_gip_std>time_thres) = [];
 diff_gip_std(isnan(diff_gip_std)) = [];
@@ -390,29 +417,33 @@ diff_grab_gip(isnan(diff_grab_gip)) = [];
 
 figure
 [~,~,p] = statcond({diff_gip_std,diff_gip_dev},'method','bootstrap','naccu',1000);
-hs = histogram(diff_gip_std,'binwidth',50,'Normalization','probability','DisplayName','Deviant');
+hs = histogram(diff_gip_std,'binwidth',50,'Normalization','probability','DisplayName','Deviant',...
+    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
 hold on; grid on
-hd = histogram(diff_gip_dev,'binwidth',50,'Normalization','probability','DisplayName','Standard');
+hd = histogram(diff_gip_dev,'binwidth',50,'Normalization','probability','DisplayName','Standard',...
+    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
 plot(nan,'DisplayName',sprintf('p = %g',p));
 legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-xlabel('Time (ms)')
+xlabel('latency (ms)')
 ylabel('Probability')
 set(gca,'fontsize',20)
-title(['GIP minus Stim > ',cond_name])
+title(['GIP latency ',cond_name])
 set(gca,'fontsize',20)
+set(gcf,'color','w')
 
-% figure
-% hs = histogram(diff_grab_gip,'binwidth',50,'Normalization','probability','DisplayName','Response');
-% 
-% figure
-% [~,~,p] = statcond({diff_gip_std,-diff_stim_grab},'method','bootstrap','naccu',1000);
-% hs = histogram(diff_gip_std,'binwidth',50,'Normalization','probability','DisplayName','GIP');
-% hold on; grid on
-% hd = histogram(-diff_stim_grab,'binwidth',50,'Normalization','probability','DisplayName','Response');
-% plot(nan,'DisplayName',sprintf('p = %g',p));
-% legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-% xlabel('Time (ms)')
-% ylabel('Probability')
-% set(gca,'fontsize',20)
-% title(['GIP minus Stim > ',cond_name])
-% set(gca,'fontsize',20)
+figure
+hs = histogram(diff_grab_gip,'binwidth',50,'Normalization','probability','DisplayName','Response');
+
+figure
+hs = histogram(diff_gip_std,'binwidth',50,'Normalization','probability','DisplayName','GIP',...
+    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
+hold on; grid on
+hd = histogram(diff_stim_grab,'binwidth',50,'Normalization','probability','DisplayName','Response',...
+    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+xlabel('Latency(ms)')
+ylabel('Probability')
+set(gca,'fontsize',20)
+title(['GIP and Response ',cond_name])
+set(gca,'fontsize',20)
+set(gcf,'color','w')

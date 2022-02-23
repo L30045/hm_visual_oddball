@@ -52,13 +52,13 @@ len_blink = 100;
 %   [thres_ang_v]: angular velocity higher than this threshold will be marked
 %   as saccade) (Default: 30 deg/s ref. tobii, 130 deg/s ref. Eye tracking
 %   2017.) (deg/s)
-thres_ang = 0.5; 
+thres_ang = 1; 
 thres_ang_v = 30;
-fix_selection = 'dispersion';
-% fix_selection = 'velocity';
+% fix_selection = 'dispersion';
+fix_selection = 'velocity';
 max_fix_interval = 75;
 max_fix_ang = 1;
-min_fix_len = 150;
+min_fix_len = 200;
 
 %% load data
 [data_struct, EEG_ori, ~, s_eyeGaze, ~, s_EEG] = load_eyetracking_hm(filename);
@@ -71,11 +71,15 @@ nbchan = EEG.nbchan;
 
 % Prevent event marker error 
 cond_i = EEG.filename(9);
-switch cond_i
-    case '1'
-        reg_txt = 'Ring 0';
-    case '2'
-        reg_txt = 'Ring 1';
+if EEG.filename(3)=='1'
+    switch cond_i
+        case '1'
+            reg_txt = 'Ring 0';
+        case '2'
+            reg_txt = 'Ring 1';
+    end
+else
+    reg_txt = 'Ring 0';
 end
 
 %% find out stimulus onset time
@@ -85,7 +89,8 @@ idx_dev = idx_dev & idx_cond;
 idx_std = cellfun(@(x) ~isempty(regexp(x, 'Standard', 'ONCE')), {EEG.event.type});
 idx_std = idx_std & idx_cond;
 idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type});
-idx_tri(find(idx_tri,2,'last')) = false;
+% idx_tri(find(idx_tri,2,'last')) = false;
+idx_blue = cellfun(@(x) ~isempty(regexp(x, 'blue_cube', 'ONCE')), {EEG.event.type});
 std_ev = {EEG.event(idx_std).type};
 dev_ev = {EEG.event(idx_dev).type};
 grab_ev = [EEG.event(idx_tri).latency];
@@ -108,6 +113,7 @@ t_c = (fix_struct.time_stamps - t_offset)*1000; % change unit to ms
 % round up EEG stream time stamps with eye gaze stream time stamps
 t_std_ori = ([EEG.event(idx_std).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms) 
 t_dev_ori = ([EEG.event(idx_dev).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms)
+t_blue_ori = ([EEG.event(idx_blue).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms)
 t_std = zeros(size(t_std_ori));
 t_dev = zeros(size(t_dev_ori));
 for t_i = 1:length(t_std)
@@ -276,6 +282,23 @@ for i = 1:length(t_dev_ori)
         EEG.event(len_event+1).urevent = len_event+1;
     end
 end
+t_f_blue = zeros(1,length(t_blue_ori));
+for i = 1:length(t_blue_ori)
+    t_f = fix_start(find(fix_start>t_blue_ori(i),1));
+    if ~isempty(t_f)
+        t_f_blue(i) = t_f;
+        len_event = length(EEG.event);
+        EEG.event(len_event+1).type = 'blue_fix_start';
+        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).urevent = len_event+1;
+    else
+        t_f_blue(i) = NaN;
+        len_event = length(EEG.event);
+        EEG.event(len_event+1).type = 'blue_fix_missing';
+        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).urevent = len_event+1;
+    end
+end
 
 %% Linear interpret eye gaze stream into EEG stream
 % smoothing using moving average
@@ -338,7 +361,7 @@ fprintf('Number of missing responses: %d\n', miss_grab_count);
 diff_time = zeros(1,length(std_time));
 for i = 1:length(std_time)-1
     l_std = std_time(i);
-    r_t = find(grab_time>l_std,1);
+    r_t = grab_time(find(grab_time>l_std,1));
     if isempty(r_t)
         diff_time(i) = NaN;
     else
@@ -350,18 +373,15 @@ for i = 1:length(std_time)-1
     end
 end
 l_std = std_time(end);
-r_t = find(grab_time>l_std,1);
+r_t = grab_time(find(grab_time>l_std,1));
 if isempty(r_t)
     diff_time(end) = NaN;
 else
-    if r_t > std_time(i+1)
-        diff_time(end) = NaN;
-    else
-        diff_time(end) = r_t-l_std;
-    end
+    diff_time(end) = r_t-l_std;
 end
 diff_time = diff_time/EEG.srate;
 fprintf('Median reaction time: %d ms\n',round(median(diff_time*1000)));
+diff_time = diff_time * 1000;
 % 631 ms for no headmovement
 % 765 ms for headmovement
 
@@ -374,6 +394,7 @@ end
 fix_epoch = pop_epoch(EEG,{'fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 fix_std = pop_epoch(EEG,{'circle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 fix_dev = pop_epoch(EEG,{'triangle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
+fix_blue = pop_epoch(EEG,{'blue_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 gip_std = pop_epoch(EEG,{'circle_gip_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 gip_dev = pop_epoch(EEG,{'triangle_gip_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 
@@ -384,6 +405,7 @@ behavi_dev = dev_epoch.data(nbchan+1:end,:,:);
 behavi_fixAll = fix_epoch.data(nbchan+1:end,:,:);
 behavi_fstd = fix_std.data(nbchan+1:end,:,:);
 behavi_fdev = fix_dev.data(nbchan+1:end,:,:);
+behavi_fblue = fix_blue.data(nbchan+1:end,:,:);
 behavi_gstd = gip_std.data(nbchan+1:end,:,:);
 behavi_gdev = gip_dev.data(nbchan+1:end,:,:);
 % remove baseline
@@ -392,6 +414,7 @@ dev_epoch = pop_rmbase(dev_epoch,[len_epoch(1) 0],[]);
 fix_epoch = pop_rmbase(fix_epoch,[len_epoch_grab(1) 0],[]);
 fix_std = pop_rmbase(fix_std,[len_epoch_grab(1) 0],[]);
 fix_dev = pop_rmbase(fix_dev,[len_epoch_grab(1) 0],[]);
+fix_blue = pop_rmbase(fix_blue,[len_epoch_grab(1) 0],[]);
 gip_std = pop_rmbase(gip_std,[len_epoch_grab(1) 0],[]);
 gip_dev = pop_rmbase(gip_dev,[len_epoch_grab(1) 0],[]);
 % restore behavioral data
@@ -400,6 +423,7 @@ dev_epoch.data(nbchan+1:end,:,:) = behavi_dev;
 fix_epoch.data(nbchan+1:end,:,:) = behavi_fixAll;
 fix_std.data(nbchan+1:end,:,:) = behavi_fstd;
 fix_dev.data(nbchan+1:end,:,:) = behavi_fdev;
+fix_blue.data(nbchan+1:end,:,:) = behavi_fblue;
 gip_std.data(nbchan+1:end,:,:) = behavi_gstd;
 gip_dev.data(nbchan+1:end,:,:) = behavi_gdev;
 % some data missing grab event markers
@@ -430,9 +454,10 @@ diff_gip_dev = gipDev_time - dev_time;
 fixAll_time = fix_start; % msec
 fixStd_time = t_f_std; % msec
 fixDev_time = t_f_dev; % msec
+fixBlue_time = t_f_blue; % msec
 event_time = struct('std_time',std_time,'dev_time',dev_time,'grab_time',grab_time,...
                     'diff_stim_grab',diff_time,'diff_gip_std',diff_gip_std,'diff_gip_dev',diff_gip_dev,...
-                    'fixAll_time',fixAll_time,'fixStd_time',fixStd_time,'fixDev_time',fixDev_time,...
+                    'fixAll_time',fixAll_time,'fixStd_time',fixStd_time,'fixDev_time',fixDev_time,'fixBlue_time',fixBlue_time,...
                     'gipStd_time',gipStd_time,'gipDev_time',gipDev_time,...
                     'std_up',std_up,'std_down',std_down,'std_left',std_left,'std_right',std_right,...
                     'dev_up',dev_up,'dev_down',dev_down,'dev_left',dev_left,'dev_right',dev_right,...
@@ -440,7 +465,7 @@ event_time = struct('std_time',std_time,'dev_time',dev_time,'grab_time',grab_tim
 
 %% output
 epoch_struct = struct('std_epoch',std_epoch, 'dev_epoch',dev_epoch, 'grab_epoch',grab_epoch,...
-                      'fix_epoch',fix_epoch, 'fix_std',fix_std, 'fix_dev',fix_dev, ...
+                      'fix_epoch',fix_epoch, 'fix_std',fix_std, 'fix_dev',fix_dev, 'fix_blue', fix_blue,...
                       'gip_std',gip_std, 'gip_dev',gip_dev,'event_time',event_time);
                   
 end

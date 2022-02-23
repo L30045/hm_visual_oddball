@@ -10,14 +10,17 @@ addpath(genpath('dependencies/'))
 
 
 %% epoch EZ
-subj_i = 1;
-EEG_noHm = pop_loadset([filepath,sprintf('s%02d_cond1_ica_k10.set',subj_i)]);
-EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
-[data_struct_noHm, fix_struct_noHm, t_c_noHm, t_std_noHm, t_dev_noHm, epoch_struct_noHm, EEG_noHm]...
-= epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond1.xdf',subj_i)], EEG_noHm);
-[data_struct_Hm, fix_struct_Hm, t_c_Hm, t_std_Hm, t_dev_Hm, epoch_struct_Hm, EEG_Hm]...
-= epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond2.xdf',subj_i)], EEG_Hm);
-save([filepath,sprintf('s%02d_epoch.mat',subj_i)],'epoch_struct_noHm','epoch_struct_Hm');
+subj_list = [1,4:6,8:10];
+% subj_i = 4;
+for subj_i = 9:10
+    EEG_noHm = pop_loadset([filepath,sprintf('s%02d_cond1_ica_k10.set',subj_i)]);
+    EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
+    [data_struct_noHm, fix_struct_noHm, t_c_noHm, t_std_noHm, t_dev_noHm, epoch_struct_noHm, EEG_noHm]...
+    = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond1.xdf',subj_i)], EEG_noHm);
+    [data_struct_Hm, fix_struct_Hm, t_c_Hm, t_std_Hm, t_dev_Hm, epoch_struct_Hm, EEG_Hm]...
+    = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond2.xdf',subj_i)], EEG_Hm);
+    save([filepath,sprintf('s%02d_epoch.mat',subj_i)],'epoch_struct_noHm','epoch_struct_Hm');
+end
 
 %% calculate head rotation velocity and eye rotation velocity
 cond_i = 1;
