@@ -1,4 +1,4 @@
-function [up_idx, down_idx, left_idx, right_idx] = find_box_loc(EEG, reg_txt)
+function [up_idx, down_idx, left_idx, right_idx, tar_ev_idx] = find_box_loc(EEG, reg_txt)
 
 %% find up/down left/right event
 %boolean arrays where the LEFT/RIGHT or UP/DOWN event markers occured (I assumed
@@ -6,6 +6,7 @@ function [up_idx, down_idx, left_idx, right_idx] = find_box_loc(EEG, reg_txt)
 
 % gather 4 location
 tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,reg_txt,'ONCE')),{EEG.event.type})).type});
+tar_ev_idx = cellfun(@(x) ~isempty(regexp(x,reg_txt,'ONCE')),{EEG.event.type});
 tar_ev = cellfun(@split ,unique(cellfun(@(x) x(regexp(x,'(')+1:end-1), tar_ev, 'uniformoutput',0)),'uniformoutput',0);
 num_loc = zeros(3,4);
 for i = 1:4
