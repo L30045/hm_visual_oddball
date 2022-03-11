@@ -1,4 +1,4 @@
-function [gip_up_idx, gip_down_idx, gip_left_idx, gip_right_idx,miss_idx] = find_1st_gip(EEG,tar_ev_idx)
+function [gip_up_idx, gip_down_idx, gip_left_idx, gip_right_idx] = find_1st_gip(EEG,tar_ev_idx)
 % this function find the first gip report after stimulus onset
 %% find GIP onset time
 gip_up= cellfun(@(x) strcmp(x,'Up'),{EEG.event.type});
@@ -18,11 +18,8 @@ for i = 1:length(f_std)
     if ~isempty(t_f)
         if i<length(f_std) && t_f < f_std(i+1)
             gip_1st(t_f) = true;
-        else
-            miss_idx(f_std(i)) = true;
+        els
         end
-    else
-        miss_idx(f_std(i)) = true;
     end
 end
 
