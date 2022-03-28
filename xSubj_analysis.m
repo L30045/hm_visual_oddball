@@ -324,7 +324,7 @@ for e_i = 1
 
 end
 
-%% compare std dev
+%% compare std dev behavior
 cond_i = 2;
 ev_name = 'stim';
 
@@ -447,3 +447,58 @@ set(gca,'fontsize',20)
 title(['GIP and Response ',cond_name])
 set(gca,'fontsize',20)
 set(gcf,'color','w')
+
+%% ERPImage
+tar_Ch = {'Cz','POz'};
+cond_i = 2;
+ev_name = 'gip';
+all_event = unique({epoch_lib{1}.std_epoch.event.type});
+
+
+switch ev_name
+    case 'stim'
+        std_name = 'std_epoch';
+        dev_name = 'dev_epoch';
+        sort_std = 'circle_gip_start';
+        sort_dev = 'triangle_gip_start';
+    case 'gip'
+        std_name = 'gip_std';
+        dev_name = 'gip_dev';
+end
+
+std_merge = eeg_emptyset();
+dev_merge = eeg_emptyset();
+
+for subj_i = [1,2,3,4:7]
+    tmp_std = epoch_lib{cond_i,subj_i}.(std_name);
+    tmp_dev = epoch_lib{cond_i,subj_i}.(dev_name);
+    ch_idx = ismember({tmp_std.chanlocs.labels},tar_Ch);
+    tmp_std = pop_select(tmp_std,'channel',find(ch_idx));
+    tmp_dev = pop_select(tmp_dev,'channel',find(ch_idx));
+    if isempty(std_merge.data)
+        std_merge = tmp_std;
+        dev_merge = tmp_dev;
+    else
+        std_merge = pop_mergeset(std_merge, tmp_std);
+        dev_merge = pop_mergeset(dev_merge, tmp_dev);
+    end
+end
+
+
+[std_clean,rm_idx_std] = my_rmEpoch(std_merge);
+[dev_clean,rm_idx_dev] = my_rmEpoch(dev_merge);
+fprintf('STD remove rate = %2.1f%% (%d/ %d)\n',sum(rm_idx_std)/std_merge.trials*100,sum(rm_idx_std),std_merge.trials);
+fprintf('DEV remove rate = %2.1f%% (%d/ %d)\n',sum(rm_idx_dev)/dev_merge.trials*100,sum(rm_idx_dev),dev_merge.trials);
+
+%%
+smooth = 10;
+figure;
+pop_erpimage(std_clean,1, [1],[[]],'Cz',smooth,1,{ 'circle_gip_start'},[],'latency' ,'yerplabel','\muV','erp','on','cbar','on','topo', { [1] std_clean.chanlocs std_clean.chaninfo } );
+figure
+pop_erpimage(dev_clean,1, [1],[[]],'Cz',smooth,1,{ 'triangle_gip_start'},[],'latency' ,'yerplabel','\muV','erp','on','cbar','on','topo', { [1] dev_clean.chanlocs dev_clean.chaninfo } );
+
+%% WARNING, Epoch_lib might be wrong!!
+
+
+
+
