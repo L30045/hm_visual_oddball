@@ -16,6 +16,9 @@ EEG_rmCh_halo= pop_select(EEG_bp_halo,'channel',{'O1','O2','POz'});
 % reref
 EEG_halo = pop_reref(EEG_rmCh_halo,[]);
 
+pop_saveset(EEG_amp,'s04_amp_baseline.set');
+pop_saveset(EEG_halo,'s04_halo_baseline.set');
+
 %% extract amp epoch
 % ssvep epoch baseline
 ssvep8 = pop_epoch(EEG_amp,{'SSVEP baseline: Trial 0',...
@@ -96,6 +99,26 @@ set(gca,'fontsize',20)
 set(gcf,'color','w')
 title('Halo')
 
+%% histogram
+figure
+hold on
+grid on
+histogram(reshape(ssvep8.data(1,:,:),1,[]),'binwidth',1,'DisplayName','8');
+histogram(reshape(ssvep9.data(1,:,:),1,[]),'binwidth',1,'DisplayName','9');
+histogram(reshape(ssvep10.data(1,:,:),1,[]),'binwidth',1,'DisplayName','10');
+histogram(reshape(ssvep11.data(1,:,:),1,[]),'binwidth',1,'DisplayName','11');
+legend
+title('Amp')
+figure
+hold on
+grid on
+histogram(reshape(ssvep8_h.data(1,:,:),1,[]),'binwidth',1,'DisplayName','8');
+histogram(reshape(ssvep9_h.data(1,:,:),1,[]),'binwidth',1,'DisplayName','9');
+histogram(reshape(ssvep10_h.data(1,:,:),1,[]),'binwidth',1,'DisplayName','10');
+histogram(reshape(ssvep11_h.data(1,:,:),1,[]),'binwidth',1,'DisplayName','11');
+legend
+title('Halo')
+
 %% load task data
 amp_EEG = pop_loadxdf('s04_amp.xdf');
 halo_EEG = pop_loadxdf('s04_halo.xdf');
@@ -113,18 +136,24 @@ EEG_bp_halo = pop_eegfiltnew(halo_EEG,0.5,20);
 EEG_rmCh_halo= pop_select(EEG_bp_halo,'channel',{'O1','O2','POz'});
 % reref
 EEG_halo = pop_reref(EEG_rmCh_halo,[]);
+pop_saveset(EEG_amp,'s04_amp.set');
+pop_saveset(EEG_halo,'s04_halo.set');
+
+%%
+figure; histogram(EEG_halo.data(1,:),'binwidth',1);
+figure; histogram(EEG_amp.data(1,:),'binwidth',1);
 
 %% extract epoch
 psd_lib_amp = zeros(2,4,22); % ring by direct by freq
 psd_lib_halo = zeros(2,4,22); % ring by direct by freq
 
 
-for ring_txt = 1:2
-    for direction = 0:3
-        tar_ev_halo = cellfun(@(x) ~isempty(regexp(x,[sprintf('Ring %d\;',ring_txt),'\sTrial .; ',sprintf('Cube index(L): %d',direction)]),'ONCE'));
-        tar_ev_amp = 
-        tar_halo = pop_epoch(EEG_amp,tar_ev_halo,[0,3]);
-        tar_amp  = pop_epoch(EEG_amp,tar_ev_amp,[0,3]);
+% for ring_txt = 1:2
+%     for direction = 0:3
+%         tar_ev_halo = cellfun(@(x) ~isempty(regexp(x,[sprintf('Ring %d\;',ring_txt),'\sTrial .; ',sprintf('Cube index(L): %d',direction)]),'ONCE'));
+%         tar_ev_amp = 
+%         tar_halo = pop_epoch(EEG_amp,tar_ev_halo,[0,3]);
+%         tar_amp  = pop_epoch(EEG_amp,tar_ev_amp,[0,3]);
 
 
 
