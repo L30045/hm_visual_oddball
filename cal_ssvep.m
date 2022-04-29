@@ -1,4 +1,5 @@
 filename = 's04_amp_baseline.xdf';
+filepath = 'D:\Research\Epoch Data';
 amp_EEG = pop_loadxdf([filepath,filesep,filename]);
 halo_EEG = pop_loadxdf([filepath,filesep,'s04_halo_baseline.xdf']);
 
@@ -156,20 +157,121 @@ psd_lib_halo = zeros(2,4,22); % ring by direct by freq
 %         tar_amp  = pop_epoch(EEG_amp,tar_ev_amp,[0,3]);
 
 
+%% artifact removal for Ring 2
+EEG = pop_loadset('s04_halo_stimLock_left.set');
+% before artifact cleaning
+pop_prop(EEG, 1, 1,NaN, {'freqrange',[1 20]});
+% my_rmEpoch
+[rm_Amp, rm_idx] = my_rmEpoch(EEG);
+pop_prop(rm_Amp, 1, 1,NaN, {'freqrange',[1 20]});
 
+%% Finding PC regressors
+% perform moving average on single epoch matrix to reduce noises for the
+% following PCA process
 
+%% parameter setting
+tarCh = 'O1';
+mvavg_winlen = 3; % trial
+t_interest = [500 2000]; % msec
+nb_PC = 1;
 
+%% 
+epoch = squeeze(EEG.data(ismember({EEG.chanlocs.labels},tarCh),:,:))';
+random_group = randperm(size(epoch,1));
+sort_epoch = epoch(random_group,:);
+mvavg_idx = discretize(1:size(sort_epoch,1),ceil(size(sort_epoch,1)/mvavg_winlen));
+mvavg_epoch = zeros(max(mvavg_idx), size(sort_epoch,2));
+for i = 1:max(mvavg_idx)
+    mvavg_epoch(i,:) = mean(sort_epoch(mvavg_idx==i,:));
+end
 
+% segement out data within time period of interest
+% reg_mat = zeros(size(epoch,2),nb_PC);
+pca_epoch = mvavg_epoch;
+% PCA
+% trial as features, time as observation
+% built covariance matrix (channel by channel)
+xcov = pca_epoch * pca_epoch';
+% eigenvalue decomposition
+[V, ~] = eig(xcov);
+% extract nb_PC
+V_pick = V(:,end-nb_PC+1:end);
+% reconstruct latent component (comp by time)
+pc_act = V_pick'*pca_epoch;
+% [pc_weight,pc_act] = pca(pca_epoch,nb_PC);
+% zero paddling
+pc_regressors = pc_act;
+% regressors matrix
+reg_mat = pc_regressors';
 
+reg_mat = [ones(size(epoch,2),1), reg_mat];
 
+%% Multiple Linear Regression with dispertion term
+reg_epoch = zeros(size(epoch));
+for i = 1:size(epoch,1)
+    single_epoch = epoch(i,:)';
+	b = regress(single_epoch, reg_mat);
+    reg_epoch(i,:) = reg_mat*b;
+end
 
+% substract regression results
+rmReg_epoch = epoch - reg_epoch;
 
+%% visualization
+[spec,freq] = spectopo(rmReg_epoch,0,EEG.srate,'plot','off');
+plt_f = 0:20;
+plt_spec = spec(:,plt_f+1);
+figure
+plot(plt_f, mean(plt_spec))
+pseudoEEG = EEG;
+pseudoEEG.data(1,:,:) = rmReg_epoch';
+pop_prop(pseudoEEG, 1, 1,NaN, {'freqrange',[1 20]});
 
+%% back project PC
+[coeff, score, latent, tsquared, explained] = pca(epoch');
+latent_norm = latent./sum(latent);
+nb_PC = find(cumsum(latent_norm)>=0.9,1);
 
+figure
+plot(score(:,1:nb_PC))
+grid on
+legend({'PC1','PC2','PC3'})
+xlabel('Time (ms)')
+ylabel('Amplitude (\muV)')
 
+preserved_PC = score;
+preserved_PC(:,1:nb_PC) = 0;
+proj_data = pinv(coeff')* preserved_PC';
 
+figure
+plot(0:749, proj_data)
+hold on
+grid on
+plot(0:749, mean(proj_data), 'k-', 'linewidth',3)
+xlabel('Time (ms)')
+ylabel('Amplitude (\muV)')
 
+[spec, freq] = spectopo(proj_data,0,EEG.srate,'plot','off');
+plt_f = 0:20;
+plt_spec = spec(:,plt_f+1);
+figure
+plot(plt_f, plt_spec)
+hold on
+grid on
+plot(plt_f, mean(plt_spec), 'k-','linewidth',3)
+xlabel('Frequency (Hz)')
+ylabel('Power (\muV^2)')
 
+[spec, freq] = spectopo(epoch,0,EEG.srate,'plot','off');
+plt_f = 0:20;
+plt_spec = spec(:,plt_f+1);
+figure
+plot(plt_f, plt_spec)
+hold on
+grid on
+plot(plt_f, mean(plt_spec), 'k-','linewidth',3)
+xlabel('Frequency (Hz)')
+ylabel('Power (\muV^2)')
 
 
 
