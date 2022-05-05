@@ -1,7 +1,15 @@
-filename = 's04_amp_baseline.xdf';
-filepath = 'D:\Research\Epoch Data';
-amp_EEG = pop_loadxdf([filepath,filesep,filename]);
-halo_EEG = pop_loadxdf([filepath,filesep,'s04_halo_baseline.xdf']);
+%% baseline
+subj_i = 5;
+filename = sprintf('s%02d_ssvep_baseline.xdf',subj_i);
+filepath = '\\hoarding\yuan\Documents\2021 HM_visual_oddball\dataset\';
+EEG = pop_loadxdf([filepath,filename]);
+
+%% preprocessing
+% band pass
+EEG = pop_eegfiltnew(EEG,0.5,20);
+% look up channel location
+
+
 
 %% preprocessing
 % bandpass filter
