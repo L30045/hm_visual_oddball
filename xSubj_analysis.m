@@ -469,7 +469,7 @@ end
 std_merge = eeg_emptyset();
 dev_merge = eeg_emptyset();
 
-for subj_i = [1,2,3,4:7]
+for subj_i = [1,2,4:7]
     tmp_std = epoch_lib{cond_i,subj_i}.(std_name);
     tmp_dev = epoch_lib{cond_i,subj_i}.(dev_name);
     ch_idx = ismember({tmp_std.chanlocs.labels},tar_Ch);
@@ -497,7 +497,31 @@ pop_erpimage(std_clean,1, [1],[[]],'Cz',smooth,1,{ 'circle_gip_start'},[],'laten
 figure
 pop_erpimage(dev_clean,1, [1],[[]],'Cz',smooth,1,{ 'triangle_gip_start'},[],'latency' ,'yerplabel','\muV','erp','on','cbar','on','topo', { [1] dev_clean.chanlocs dev_clean.chaninfo } );
 
-%% WARNING, Epoch_lib might be wrong!!
+%% Sanity check. Number of trials in epoch_lib Ring 0 and 1 both appear in the file
+nb_std_epoch_cond1 = cellfun(@(x) size(x.std_epoch.data,3), epoch_lib(1,:));
+nb_std_epoch_cond2 = cellfun(@(x) size(x.std_epoch.data,3), epoch_lib(2,:));
+nb_dev_epoch_cond1 = cellfun(@(x) size(x.dev_epoch.data,3), epoch_lib(1,:));
+nb_dev_epoch_cond2 = cellfun(@(x) size(x.dev_epoch.data,3), epoch_lib(2,:));
+nb_gip_std_cond1 = cellfun(@(x) size(x.gip_std.data,3), epoch_lib(1,:));
+nb_gip_std_cond2 = cellfun(@(x) size(x.gip_std.data,3), epoch_lib(2,:));
+nb_gip_dev_cond1 = cellfun(@(x) size(x.gip_dev.data,3), epoch_lib(1,:));
+nb_gip_dev_cond2 = cellfun(@(x) size(x.gip_dev.data,3), epoch_lib(2,:));
+
+%% check event markers
+
+%% TO DO LIST
+% hm_visual_oddball
+% plot the shadedErrorBar for the ERP
+% sort the GIP event by stim onset
+% check the event marker Ring 1 and Ring 0 appear together problem
+% Regression artifact cleaning
+% disable baseline removal
+% 
+% SSVEP
+% Calculate PSD after 500ms to avoid 10Hz created by stimulus-onset ERP 
+% Epoch by GIP onset
+% disable baseline removal
+
 
 
 

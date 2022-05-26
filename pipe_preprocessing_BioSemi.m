@@ -3,14 +3,17 @@ eegpath = which('eeglab.m');
 eegpath = eegpath(1:end-8);
 
 %% load data
-filepath = '\\hoarding\yuan\Documents\2021 HM_visual_oddball\dataset\';
-filename = 's05_ssvep_amp.xdf';
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/';
+filename = '1145_ssvep_amp.xdf';
+savepath = '/home/yuan/Documents/2021 HM_visual_oddball/preproc_data/';
 EEG = pop_loadxdf([filepath,filename]);
 
 
 %% preprocessing
 % band pass
 EEG = pop_eegfiltnew(EEG,1,50);
+% rereference
+EEG = pop_reref(EEG,{'EX1','EX2'});
 % look up channel location
 % Rename channels label
 chLabel_new = {'Fp1','AF7','AF3','F1','F3','F5','F7','FT7','FC5','FC3',...
@@ -20,7 +23,6 @@ chLabel_new = {'Fp1','AF7','AF3','F1','F3','F5','F7','FT7','FC5','FC3',...
                'FT8','FC6','FC4','FC2','FCz','Cz','C2','C4','C6','T8',...
                'TP8','CP6','CP4','CP2','P2','P4','P6','P8','P10','PO8','PO4','O2'};
 EEG = pop_select(EEG,'nochannel',{'Trig1','EX3','EX4','EX5','EX6','EX7','EX8'});
-EEG = pop_reref(EEG,{'EX1','EX2'});
 [EEG.chanlocs.labels] = deal(chLabel_new{:});
 % Add channel location    
 EEG = pop_chanedit(EEG, 'lookup',[eegpath,'plugins/dipfit/standard_BEM/elec/standard_1005.elc']); % MNI
