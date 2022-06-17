@@ -103,10 +103,12 @@ fix_struct = cal_fix_pupil(test_data,data_struct.srate,'blink_length',len_blink,
                            'max_fix_interval',max_fix_interval,'max_fix_ang',max_fix_ang,'min_fix_len',min_fix_len);
 eye_fix_idx = fix_struct.eye_fixation.eye_fix_idx;
 
-%% synchronize eye gaze stream and EEG stream
-t_offset = str2double(s_eyeGaze.info.first_timestamp) - str2double(s_EEG.info.first_timestamp); % sec
-% correct time stamps of the eye gaze stream
-t_c = (fix_struct.time_stamps - t_offset)*1000; % change unit to ms
+%% synchronize eye gaze stream and EEG stream (This part is wrong! LSL is already sychronized.)
+% t_offset = str2double(s_eyeGaze.info.first_timestamp) - str2double(s_EEG.info.first_timestamp); % sec
+% % correct time stamps of the eye gaze stream
+% t_c = (fix_struct.time_stamps - t_offset)*1000; % change unit to ms
+
+t_c = fix_struct.time_stamps;
 
 % synchronize EEG stream to eye gaze stream
 % sort event by pupil displacement/ angular velocity
@@ -114,18 +116,21 @@ t_c = (fix_struct.time_stamps - t_offset)*1000; % change unit to ms
 t_std_ori = ([EEG.event(idx_std).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms) 
 t_dev_ori = ([EEG.event(idx_dev).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms)
 t_blue_ori = ([EEG.event(idx_blue).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms)
-t_std = zeros(size(t_std_ori));
-t_dev = zeros(size(t_dev_ori));
-for t_i = 1:length(t_std)
-    t_std(t_i) = t_c(find(t_c>t_std_ori(t_i),1,'first'));
-end
-fprintf('RMSE of circle trials: %.f ms\n',sqrt(sum((t_std-t_std_ori).^2))/length(t_std))
-fprintf('Max error: %.f ms\n',max(t_std-t_std_ori))
-for t_i = 1:length(t_dev)
-    t_dev(t_i) = t_c(find(t_c>t_dev_ori(t_i),1,'first'));
-end
-fprintf('RMSE of triangle trials: %.f ms\n',sqrt(sum((t_dev-t_dev_ori).^2))/length(t_dev))
-fprintf('Max error: %.f ms\n',max(t_dev-t_dev_ori))
+% t_std = t_std_ori;
+% t_dev = t_dev_ori;
+
+% t_std = zeros(size(t_std_ori));
+% t_dev = zeros(size(t_dev_ori));
+% for t_i = 1:length(t_std)
+%     t_std(t_i) = t_c(find(t_c>t_std_ori(t_i),1,'first'));
+% end
+% fprintf('RMSE of circle trials: %.f ms\n',sqrt(sum((t_std-t_std_ori).^2))/length(t_std))
+% fprintf('Max error: %.f ms\n',max(t_std-t_std_ori))
+% for t_i = 1:length(t_dev)
+%     t_dev(t_i) = t_c(find(t_c>t_dev_ori(t_i),1,'first'));
+% end
+% fprintf('RMSE of triangle trials: %.f ms\n',sqrt(sum((t_dev-t_dev_ori).^2))/length(t_dev))
+% fprintf('Max error: %.f ms\n',max(t_dev-t_dev_ori))
 
 %% find up/down left/right event
 %boolean arrays where the LEFT/RIGHT or UP/DOWN event markers occured (I assumed
