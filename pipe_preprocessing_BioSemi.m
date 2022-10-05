@@ -3,12 +3,13 @@ eegpath = which('eeglab.m');
 eegpath = eegpath(1:end-8);
 
 %% load data
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
-filename = {dir([filepath,'*.xdf']).name};
-savepath = '/home/yuan/Documents/2021 HM_visual_oddball/preproc_data/';
-% filepath = 'C:\Users\Yuan\OneDrive\Desktop\visualOddball-NicoleXinDataCollection\sub1163\';
-% filename = '2004_Oddball_1163_Outer.xdf';
-% EEG = pop_loadxdf([filepath,filename]);
+% filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
+% filename = {dir([filepath,'*.xdf']).name};
+% savepath = '/home/yuan/Documents/2021 HM_visual_oddball/preproc_data/';
+filepath = 'C:\Users\Yuan\OneDrive\Desktop\sub1163\';
+filename = '2004_SSVEP_1163_condition.xdf';
+EEG = pop_loadxdf([filepath,filename]);
+savepath = filepath;
 
 
 %% preprocessing
