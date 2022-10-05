@@ -5,22 +5,37 @@ eegpath = which('eeglab');
 cd(eegpath(1:regexp(eegpath,'eeglab.m')-1))
 eeglab
 cd(c_path)
-filepath = 'E:\hm_visual_oddball\dataset\';
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/';
+savepath = [filepath,'new epoch/']; % Correct the synchronization issue in epoch_ez and create new epoch.
+savepath = 'C:\Users\Yuan\OneDrive\Desktop\visualOddball-NicoleXinDataCollection/new epoch/';
+filepath = 'C:\Users\Yuan\OneDrive\Desktop\visualOddball-NicoleXinDataCollection\preproc_data/';
 addpath(genpath('dependencies/'))
 
 
 %% epoch EZ
-subj_list = [1,4:6,8:10];
-% subj_i = 4;
-for subj_i = 9:10
-    EEG_noHm = pop_loadset([filepath,sprintf('s%02d_cond1_ica_k10.set',subj_i)]);
-    EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
-    [data_struct_noHm, fix_struct_noHm, t_c_noHm, t_std_noHm, t_dev_noHm, epoch_struct_noHm, EEG_noHm]...
-    = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond1.xdf',subj_i)], EEG_noHm);
-    [data_struct_Hm, fix_struct_Hm, t_c_Hm, t_std_Hm, t_dev_Hm, epoch_struct_Hm, EEG_Hm]...
-    = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond2.xdf',subj_i)], EEG_Hm);
-    save([filepath,sprintf('s%02d_epoch.mat',subj_i)],'epoch_struct_noHm','epoch_struct_Hm');
-end
+% subj_list = [1,4:6,8:10];
+% % subj_i = 4;
+% for subj_i = subj_list
+%     EEG_noHm = pop_loadset([filepath,sprintf('s%02d_cond1_ica_k10.set',subj_i)]);
+%     EEG_Hm = pop_loadset([filepath,sprintf('s%02d_cond2_ica_k10.set',subj_i)]);
+%     [data_struct_noHm, fix_struct_noHm, t_c_noHm, t_std_noHm, t_dev_noHm, epoch_struct_noHm, EEG_noHm]...
+%     = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond1.xdf',subj_i)], EEG_noHm);
+%     [data_struct_Hm, fix_struct_Hm, t_c_Hm, t_std_Hm, t_dev_Hm, epoch_struct_Hm, EEG_Hm]...
+%     = epoch_ez([filepath,sprintf('hm_visual_oddball_s%02d_cond2.xdf',subj_i)], EEG_Hm);
+%     save([savepath,sprintf('s%02d_epoch.mat',subj_i)],'-v7.3','epoch_struct_noHm','epoch_struct_Hm');
+% end
+% disp('Done')
+
+filename = '2004_Oddball_1163';
+loadpath = ['C:\Users\Yuan\OneDrive\Desktop\visualOddball-NicoleXinDataCollection\sub',filename(end-3:end),'\'];
+EEG_noHm = pop_loadset([filepath,sprintf('%s_Inner.set',filename)]);
+EEG_Hm = pop_loadset([filepath,sprintf('%s_Outer.set',filename)]);
+[~, ~, ~, ~, ~, epoch_struct_noHm, ~]...
+= epoch_ez([loadpath,sprintf('%s_Inner.xdf',filename)], EEG_noHm);
+[~, ~, ~, ~, ~, epoch_struct_Hm, ~]...
+= epoch_ez([loadpath,sprintf('%s_Outer.xdf',filename)], EEG_Hm);
+save([savepath,'new_s03_epoch.mat'],'-v7.3','epoch_struct_noHm','epoch_struct_Hm');
+disp('Done')
 
 %% calculate head rotation velocity and eye rotation velocity
 cond_i = 1;

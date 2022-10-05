@@ -61,7 +61,7 @@ max_fix_ang = 1;
 min_fix_len = 200;
 
 %% load data
-[data_struct, EEG_ori, ~, s_eyeGaze, ~, s_EEG] = load_eyetracking_hm(filename);
+[data_struct, EEG_ori, ~, ~, ~, ~] = load_eyetracking_hm(filename);
 if isempty(varargin)
     EEG = EEG_ori;
 else
@@ -69,25 +69,25 @@ else
 end
 nbchan = EEG.nbchan;
 
-% Prevent event marker error 
-cond_i = EEG.filename(9);
-if EEG.filename(3)=='1'
-    switch cond_i
-        case '1'
-            reg_txt = 'Ring 0';
-        case '2'
-            reg_txt = 'Ring 1';
-    end
-else
-    reg_txt = 'Ring 0';
-end
+% % Prevent event marker error 
+% cond_i = EEG.filename(9);
+% if EEG.filename(3)=='1'
+%     switch cond_i
+%         case '1'
+%             reg_txt = 'Ring 0';
+%         case '2'
+%             reg_txt = 'Ring 1';
+%     end
+% else
+%     reg_txt = 'Ring 0';
+% end
 
 %% find out stimulus onset time
-idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type});
-idx_dev = cellfun(@(x) ~isempty(regexp(x, 'Deviant', 'ONCE')), {EEG.event.type});
-idx_dev = idx_dev & idx_cond;
-idx_std = cellfun(@(x) ~isempty(regexp(x, 'Standard', 'ONCE')), {EEG.event.type});
-idx_std = idx_std & idx_cond;
+% idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type});
+idx_dev = cellfun(@(x) ~isempty(regexp(x, '\(R\)', 'ONCE')), {EEG.event.type});
+% idx_dev = idx_dev & idx_cond;
+idx_std = cellfun(@(x) ~isempty(regexp(x, '\(L\)', 'ONCE')), {EEG.event.type});
+% idx_std = idx_std & idx_cond;
 idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type});
 % idx_tri(find(idx_tri,2,'last')) = false;
 idx_blue = cellfun(@(x) ~isempty(regexp(x, 'blue_cube', 'ONCE')), {EEG.event.type});
@@ -108,7 +108,7 @@ eye_fix_idx = fix_struct.eye_fixation.eye_fix_idx;
 % % correct time stamps of the eye gaze stream
 % t_c = (fix_struct.time_stamps - t_offset)*1000; % change unit to ms
 
-t_c = fix_struct.time_stamps;
+t_c = fix_struct.time_stamps*1000; % change unit to ms
 
 % synchronize EEG stream to eye gaze stream
 % sort event by pupil displacement/ angular velocity
@@ -116,8 +116,8 @@ t_c = fix_struct.time_stamps;
 t_std_ori = ([EEG.event(idx_std).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms) 
 t_dev_ori = ([EEG.event(idx_dev).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms)
 t_blue_ori = ([EEG.event(idx_blue).latency]-1)/EEG.srate*1000; % convert from sample point to time (ms)
-% t_std = t_std_ori;
-% t_dev = t_dev_ori;
+t_std = t_std_ori;
+t_dev = t_dev_ori;
 
 % t_std = zeros(size(t_std_ori));
 % t_dev = zeros(size(t_dev_ori));
@@ -137,7 +137,7 @@ t_blue_ori = ([EEG.event(idx_blue).latency]-1)/EEG.srate*1000; % convert from sa
 %they were mutually trail exclusive i.e. both do not occur in the same trail)
 
 % gather 4 location
-tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,reg_txt,'ONCE')),{EEG.event.type})).type});
+tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,'Ring','ONCE')),{EEG.event.type})).type});
 tar_ev = cellfun(@split ,unique(cellfun(@(x) x(regexp(x,'(')+1:end-1), tar_ev, 'uniformoutput',0)),'uniformoutput',0);
 num_loc = zeros(3,4);
 for i = 1:4
@@ -157,6 +157,12 @@ up_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',upLoc),'mat
 down_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',downLoc),'match','ONCE')),{EEG.event.type});
 left_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',leftLoc),'match','ONCE')),{EEG.event.type});
 right_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',rightLoc),'match','ONCE')),{EEG.event.type});
+
+up_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 1','ONCE')),{EEG.event.type});
+down_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 3','ONCE')),{EEG.event.type});
+left_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 2','ONCE')),{EEG.event.type});
+right_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 0','ONCE')),{EEG.event.type});
+
 
 
 
@@ -313,8 +319,12 @@ mv_hloc = smoothing_mv_avg(data_struct.ori_head_3D_loc, true(1,size(data_struct.
 % get eye blink index
 blk_idx = false(1,length(fix_struct.time_stamps));
 dLose_idx = false(size(blk_idx));
-blk_idx([fix_struct.gap_detection.blink_idx{:}]) = true;
-dLose_idx([fix_struct.gap_detection.dataLose_idx{:}]) = true;
+if ~isempty(fix_struct.gap_detection.blink_idx)
+    blk_idx([fix_struct.gap_detection.blink_idx{:}]) = true;
+end
+if ~isempty(fix_struct.gap_detection.dataLose_idx) 
+    dLose_idx([fix_struct.gap_detection.dataLose_idx{:}]) = true;
+end
 
 % velocity_smooth_win_len = 40;
 % srate = round(fix_struct.srate);
@@ -396,10 +406,7 @@ if any(ismember({EEG.event.type},'grab'))
 else
     grab_epoch = [];
 end
-fix_epoch = pop_epoch(EEG,{'fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
-fix_std = pop_epoch(EEG,{'circle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
-fix_dev = pop_epoch(EEG,{'triangle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
-fix_blue = pop_epoch(EEG,{'blue_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
+
 gip_std = pop_epoch(EEG,{'circle_gip_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 gip_dev = pop_epoch(EEG,{'triangle_gip_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
 
@@ -407,28 +414,16 @@ gip_dev = pop_epoch(EEG,{'triangle_gip_start'},len_epoch_grab/1000, 'epochinfo',
 % save behavioral data
 behavi_std = std_epoch.data(nbchan+1:end,:,:);
 behavi_dev = dev_epoch.data(nbchan+1:end,:,:);
-behavi_fixAll = fix_epoch.data(nbchan+1:end,:,:);
-behavi_fstd = fix_std.data(nbchan+1:end,:,:);
-behavi_fdev = fix_dev.data(nbchan+1:end,:,:);
-behavi_fblue = fix_blue.data(nbchan+1:end,:,:);
 behavi_gstd = gip_std.data(nbchan+1:end,:,:);
 behavi_gdev = gip_dev.data(nbchan+1:end,:,:);
 % remove baseline
-std_epoch = pop_rmbase(std_epoch,[len_epoch(1) 0],[]);
-dev_epoch = pop_rmbase(dev_epoch,[len_epoch(1) 0],[]);
-fix_epoch = pop_rmbase(fix_epoch,[len_epoch_grab(1) 0],[]);
-fix_std = pop_rmbase(fix_std,[len_epoch_grab(1) 0],[]);
-fix_dev = pop_rmbase(fix_dev,[len_epoch_grab(1) 0],[]);
-fix_blue = pop_rmbase(fix_blue,[len_epoch_grab(1) 0],[]);
-gip_std = pop_rmbase(gip_std,[len_epoch_grab(1) 0],[]);
-gip_dev = pop_rmbase(gip_dev,[len_epoch_grab(1) 0],[]);
+std_epoch = pop_rmbase(std_epoch,[max(len_epoch(1),std_epoch.times(1)) 0],[]);
+dev_epoch = pop_rmbase(dev_epoch,[max(len_epoch(1),dev_epoch.times(1)) 0],[]);
+gip_std = pop_rmbase(gip_std,[max(len_epoch_grab(1),gip_std.times(1)) 0],[]);
+gip_dev = pop_rmbase(gip_dev,[max(len_epoch_grab(1),gip_dev.times(1)) 0],[]);
 % restore behavioral data
 std_epoch.data(nbchan+1:end,:,:) = behavi_std;
 dev_epoch.data(nbchan+1:end,:,:) = behavi_dev;
-fix_epoch.data(nbchan+1:end,:,:) = behavi_fixAll;
-fix_std.data(nbchan+1:end,:,:) = behavi_fstd;
-fix_dev.data(nbchan+1:end,:,:) = behavi_fdev;
-fix_blue.data(nbchan+1:end,:,:) = behavi_fblue;
 gip_std.data(nbchan+1:end,:,:) = behavi_gstd;
 gip_dev.data(nbchan+1:end,:,:) = behavi_gdev;
 % some data missing grab event markers
@@ -437,6 +432,27 @@ if ~isempty(grab_epoch)
     grab_epoch = pop_rmbase(grab_epoch,[len_epoch_grab(1) 0],[]);
     grab_epoch.data(nbchan+1:end,:,:) = behavi_grab;
 end
+
+%% fix related epoch
+if false
+    fix_epoch = pop_epoch(EEG,{'fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
+    fix_std = pop_epoch(EEG,{'circle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
+    fix_dev = pop_epoch(EEG,{'triangle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
+    fix_blue = pop_epoch(EEG,{'blue_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
+    behavi_fixAll = fix_epoch.data(nbchan+1:end,:,:);
+    behavi_fstd = fix_std.data(nbchan+1:end,:,:);
+    behavi_fdev = fix_dev.data(nbchan+1:end,:,:);
+    behavi_fblue = fix_blue.data(nbchan+1:end,:,:);
+    fix_epoch = pop_rmbase(fix_epoch,[max(len_epoch_grab(1),fix_epoch.times(1)) 0],[]);
+    fix_std = pop_rmbase(fix_std,[max(len_epoch_grab(1),fix_std.times(1)) 0],[]);
+    fix_dev = pop_rmbase(fix_dev,[max(len_epoch_grab(1),fix_dev.times(1)) 0],[]);
+    fix_blue = pop_rmbase(fix_blue,[max(len_epoch_grab(1),fix_blue.times(1)) 0],[]);
+    fix_epoch.data(nbchan+1:end,:,:) = behavi_fixAll;
+    fix_std.data(nbchan+1:end,:,:) = behavi_fstd;
+    fix_dev.data(nbchan+1:end,:,:) = behavi_fdev;
+    fix_blue.data(nbchan+1:end,:,:) = behavi_fblue;
+end
+
 
 %% epoch auto rejection
 % std_epoch = pop_autorej(std_epoch,'electrodes',1:EEG_ica.nbchan-2,'nogui','on');
@@ -470,7 +486,7 @@ event_time = struct('std_time',std_time,'dev_time',dev_time,'grab_time',grab_tim
 
 %% output
 epoch_struct = struct('std_epoch',std_epoch, 'dev_epoch',dev_epoch, 'grab_epoch',grab_epoch,...
-                      'fix_epoch',fix_epoch, 'fix_std',fix_std, 'fix_dev',fix_dev, 'fix_blue', fix_blue,...
+                      'fix_epoch',[], 'fix_std',[], 'fix_dev',[], 'fix_blue',[],...
                       'gip_std',gip_std, 'gip_dev',gip_dev,'event_time',event_time);
                   
 end

@@ -1,19 +1,32 @@
 %% cross subjects erp
 % load epoch information
-subj_list = [1, 4:6, 8:10];
+% s05_epoch.mat seems to have strong artifacts in Hm_gip_Cz condition
+% subj_list = [1, 4:6, 8:10];
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+subj_list = {dir([filepath, '*_epoch*']).name};
 epoch_lib = cell(2,length(subj_list));
 for i = 1:length(subj_list)
-    load([filepath,sprintf('s%02d_epoch.mat',subj_list(i))]);
+    load([filepath,subj_list{i}]);
     epoch_lib{1,i} = epoch_struct_noHm;
     epoch_lib{2,i} = epoch_struct_Hm;
 end
-save('epoch_lib_v2.mat','epoch_lib');
+% savepath = filepath;
+% save([savepath,'epoch_lib_20221003.mat'],'-v7.3','epoch_lib');
+disp('Done')
+
+%%
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+savepath = filepath;
+load([savepath,'epoch_lib_20221003.mat'],'epoch_lib');
 
 %%
 cond_name = 'noHm';
-ev_name = 'fix';
-tar_Ch = 'Cz';
-subj_list = [1,4:6,8:10];
+ev_name = 'gip';
+tar_Ch = 'POz';
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+subj_list = {dir([filepath, '*_epoch*']).name};
+% subj_list = [1,4:6,8:10];
+
 
 len_stim = epoch_lib{1}.std_epoch.pnts;
 len_gip = epoch_lib{1}.gip_std.pnts;
@@ -36,7 +49,13 @@ switch ev_name
         head_lib = zeros(length(subj_list),len_gip);
 end
 
-for i = 5:length(subj_list)
+cir_stack = [];
+tri_stack = [];
+cir_time = [];
+tri_time = [];
+
+% for i = 1:length(subj_list)
+for i = 1:8
     switch cond_name
         case 'noHm'
             cond_struct = epoch_lib{1,i};
@@ -61,6 +80,11 @@ for i = 5:length(subj_list)
     cir_lib(i,:) = mean(squeeze(cir_epoch.data(ch_idx,:,:)),2);
     eye_lib(i,:) = mean([squeeze(cir_epoch.data(end-2,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2,'omitnan');
     head_lib(i,:) = mean([squeeze(cir_epoch.data(end-3,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2,'omitnan' );
+    cir_stack = [cir_stack;squeeze(cir_epoch.data(ch_idx,:,:))'];
+    tri_stack = [tri_stack;squeeze(tri_epoch.data(ch_idx,:,:))'];
+    cir_time = [cir_time, cond_struct.event_time.diff_gip_std];
+    tri_time = [tri_time, cond_struct.event_time.diff_gip_dev];
+    
 end
 
 %
@@ -84,6 +108,27 @@ hc = shadedErrorBar(plt_t, cir_lib, shaded_method,'lineprops',...
     {'color','r','linewidth',3,'DisplayName','Deviant'});
 hc.patch.FaceAlpha = 0.1;
 
+%
+% cond_struct = epoch_lib{2,2};
+% cir_epoch = cond_struct.gip_std;
+% tri_epoch = cond_struct.gip_dev;
+% plt_cir = squeeze(cir_epoch.data(ch_idx,:,:));
+% plt_tri = squeeze(tri_epoch.data(ch_idx,:,:));
+% plt_t = tri_epoch.times;
+% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
+% % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
+% figure
+% % >> Triangle
+% ht = shadedErrorBar(plt_t, plt_tri', shaded_method,'lineprops',...
+%     {'color','b','linewidth',3,'DisplayName','Standard'});
+% ht.patch.FaceAlpha = 0.1;
+% grid on
+% hold on
+% % >> Circle
+% hc = shadedErrorBar(plt_t, plt_cir', shaded_method,'lineprops',...
+%     {'color','r','linewidth',3,'DisplayName','Deviant'});
+% hc.patch.FaceAlpha = 0.1;
+
 % >> Behavioral plots
 % >> shadedErrorBar 
 % he = shadedErrorBar(plt_t, neye_lib, {@nanmean, @nanstd},...
@@ -103,10 +148,45 @@ xline(0,'k-','DisplayName',ev_name,'linewidth',3)
 legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
 set(gca,'fontsize',30)
 set(gcf,'color',[1 1 1])
-set(gca,'xtick',plt_t(1):100:plt_t(end))
+set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
-title(sprintf('%s lock (%s)', ev_name, tar_Ch))
+title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tar_Ch))
+
+% sanity check on ERPImage
+figure
+[sort_time,sort_idx] = sort(cir_time);
+plt_data = cir_stack(sort_idx,:);
+% plt_data = cir_lib(1:8,:);
+subplot(2,1,1)
+h = pcolor([plt_data,nan(size(plt_data,1),1);nan(1,size(plt_data,2)+1)]);
+set(h,'edgecolor','none')
+hold on
+[~,v_pos] = min(abs(plt_t));
+vline(v_pos,'k--','linewidth',50);
+colorbar
+caxis([min([cir_lib(:);tri_lib(:)]),max([cir_lib(:);tri_lib(:)])])
+set(gca,'xtick',1:50:size(plt_data,2))
+set(gca,'xticklabel',round(plt_t(1:50:end)))
+set(gca,'fontsize',20)
+title(sprintf('Cir, %s lock - %s (%s)', ev_name, cond_name, tar_Ch))
+subplot(2,1,2)
+[~,sort_idx] = sort(tri_time);
+plt_data = tri_stack(sort_idx,:);
+% plt_data = tri_lib(1:8,:);
+h = pcolor([plt_data,nan(size(plt_data,1),1);nan(1,size(plt_data,2)+1)]);
+set(h,'edgecolor','none')
+hold on 
+[~,v_pos] = min(abs(plt_t));
+vline(v_pos,'k--','linewidth',50);
+colorbar
+caxis([min([cir_lib(:);tri_lib(:)]),max([cir_lib(:);tri_lib(:)])])
+xlabel('Time (ms)')
+set(gca,'xtick',1:50:size(plt_data,2))
+set(gca,'xticklabel',round(plt_t(1:50:end)))
+title(sprintf('Tri, %s lock - %s (%s)', ev_name, cond_name, tar_Ch))
+set(gca,'fontsize',20)
+set(gcf,'color',[1 1 1])
 
 %% Laterialized Readinese Potential (LRP)
 cond_name = 'Hm';
@@ -211,20 +291,20 @@ for subj_i = 1:length(subj_list)
 end
 disp('Done')
 com = 'Dimension: [std_epoch,dev_epoch,gip_std,gip_dev] * subject * condition. Ang_lib cell: [head, eye, gip]';
-save('behav_lib_v2.mat','ang_lib','angDiff_lib','dist_lib','com');
+% save('behav_lib_v2.mat','ang_lib','angDiff_lib','dist_lib','com');
 
 
 %% plot behavior for each condition
-cond_i = 2;
+cond_i = 1;
 ev_name = 'stim';
 
 switch ev_name
     case 'stim'
         ev_idx = [1,2];
-        plt_t = epoch_struct.std_epoch.times;
+        plt_t = epoch_struct.dev_epoch.times;
     case 'gip'
         ev_idx = [3,4];
-        plt_t = epoch_struct.gip_std.times;
+        plt_t = epoch_struct.gip_dev.times;
 end
 
 switch cond_i
@@ -234,7 +314,7 @@ switch cond_i
         cond_name = 'Hm';
 end
 
-for e_i = 1
+for e_i = 2
     switch e_i
         case 1
             trial_name = 'DEV';
@@ -267,26 +347,26 @@ for e_i = 1
     shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
     my_norm = @(x)((x-min(x,[],1))./(max(x,[],1)-min(x,[],1)));
     
-    % angle
-    figure;
-    % normalized distance
-    plt_dist = my_norm(plt_dist_ori);
-    scale = max(mean(plt_e_ad,2,'omitnan'));
-    plt_dist = plt_dist * scale;
-    shadedErrorBar(plt_t,plt_e_ad', shaded_method, 'lineprops',{'b-','DisplayName','EyeAngDiff','linewidth',3});
-    grid on; hold on;
-    shadedErrorBar(plt_t,plt_h_ad', shaded_method, 'lineprops',{'r-','DisplayName','HeadAngDiff','linewidth',3})
-%     shadedErrorBar(plt_t,plt_g_ad', shaded_method, 'lineprops',{'k-','DisplayName','GIPAngDiff','linewidth',3})
-    shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
-    xline(0,'k--','linewidth',3,'DisplayName',ev_name);
-    title(sprintf('%s lock - %s (%s)',ev_name, trial_name, cond_name));
-    set(gca,'fontsize',20)
-    set(gcf,'color','w')
-    xlabel('Time (ms)')
-    ylabel('Angle (deg)')
-    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-    
     % angle difference
+%     figure;
+%     % normalized distance
+%     plt_dist = my_norm(plt_dist_ori);
+%     scale = max(mean(plt_e_ad,2,'omitnan'));
+%     plt_dist = plt_dist * scale;
+%     shadedErrorBar(plt_t,plt_e_ad', shaded_method, 'lineprops',{'b-','DisplayName','EyeAngDiff','linewidth',3});
+%     grid on; hold on;
+%     shadedErrorBar(plt_t,plt_h_ad', shaded_method, 'lineprops',{'r-','DisplayName','HeadAngDiff','linewidth',3})
+% %     shadedErrorBar(plt_t,plt_g_ad', shaded_method, 'lineprops',{'k-','DisplayName','GIPAngDiff','linewidth',3})
+%     shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+%     xline(0,'k--','linewidth',3,'DisplayName',ev_name);
+%     title(sprintf('%s lock - %s (%s)',ev_name, trial_name, cond_name));
+%     set(gca,'fontsize',20)
+%     set(gcf,'color','w')
+%     xlabel('Time (ms)')
+%     ylabel('Angle (deg)')
+%     legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+    
+    % angle 
     figure;
     plt_dist = my_norm(plt_dist_ori);
     scale = max(mean(plt_e_a,2,'omitnan'));
@@ -367,7 +447,7 @@ end
 
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
 my_norm = @(x)((x-min(x,[],1))./(max(x,[],1)-min(x,[],1)));
-%%
+%
 figure;
 % normalized distance
 h_std = plt_h_ad{1};
@@ -469,9 +549,11 @@ end
 std_merge = eeg_emptyset();
 dev_merge = eeg_emptyset();
 
-for subj_i = [1,2,4:7]
-    tmp_std = epoch_lib{cond_i,subj_i}.(std_name);
-    tmp_dev = epoch_lib{cond_i,subj_i}.(dev_name);
+subj_list = [1,4:6,8:10];
+tar_list = [1,4,6,8,9,10];
+for subj_i = 1:length(tar_list)
+    tmp_std = epoch_lib{cond_i,subj_list==tar_list(subj_i)}.(std_name);
+    tmp_dev = epoch_lib{cond_i,subj_list==tar_list(subj_i)}.(dev_name);
     ch_idx = ismember({tmp_std.chanlocs.labels},tar_Ch);
     tmp_std = pop_select(tmp_std,'channel',find(ch_idx));
     tmp_dev = pop_select(tmp_dev,'channel',find(ch_idx));

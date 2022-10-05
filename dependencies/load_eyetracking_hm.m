@@ -54,8 +54,8 @@ streams = load_xdf(filename);
 s_eyeMarker = streams{cellfun(@(x) strcmp(x.info.name,'ProEyeMarker'), streams)};
 s_eyeGaze = streams{cellfun(@(x) strcmp(x.info.name,'ProEyeGaze'), streams)};
 s_event = streams{cellfun(@(x) strcmp(x.info.name,'EventMarker'), streams)};
-s_EEG = streams{cellfun(@(x) strcmp(x.info.name,'EEG'), streams)};
-EEG = pop_loadxdf(filename,'streamname','EEG');
+s_EEG = streams{cellfun(@(x) strcmp(x.info.name,'BioSemi'), streams)};
+EEG = pop_loadxdf(filename,'streamname','BioSemi');
 
 %% ======= data stream in eye stream (39 Chs) ======== 05/31/2021
 % // 0 - 2d coordinate of left eye

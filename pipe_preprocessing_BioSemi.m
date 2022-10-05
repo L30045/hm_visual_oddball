@@ -3,13 +3,17 @@ eegpath = which('eeglab.m');
 eegpath = eegpath(1:end-8);
 
 %% load data
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/';
-filename = '1145_ssvep_amp.xdf';
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
+filename = {dir([filepath,'*.xdf']).name};
 savepath = '/home/yuan/Documents/2021 HM_visual_oddball/preproc_data/';
-EEG = pop_loadxdf([filepath,filename]);
+% filepath = 'C:\Users\Yuan\OneDrive\Desktop\visualOddball-NicoleXinDataCollection\sub1163\';
+% filename = '2004_Oddball_1163_Outer.xdf';
+% EEG = pop_loadxdf([filepath,filename]);
 
 
 %% preprocessing
+parfor i = 1:length(filename)
+EEG = pop_loadxdf([filepath,filename{i}]);
 % band pass
 EEG = pop_eegfiltnew(EEG,1,50);
 % rereference
@@ -29,7 +33,7 @@ EEG = pop_chanedit(EEG, 'lookup',[eegpath,'plugins/dipfit/standard_BEM/elec/stan
 % re-center channel location
 EEG = pop_chanedit(EEG, 'eval','chans = pop_chancenter( chans, [],[]);');
 
-%% ASR
+% ASR
 thresFlatChannel = 5;
 highPassBand = -1;
 thresPoorCorrChannel = 0.7;
@@ -38,13 +42,16 @@ thresASR = 10;
 thresWindow = -1;
 EEG = clean_rawdata(EEG, thresFlatChannel, highPassBand, thresPoorCorrChannel, thresLineNoiseChannel, thresASR, thresWindow);
 
-%% ICA
-% EEG_ica = pop_runica(EEG_prep,'icatype','runica','extend',1);
-% % ICLabel and remove eye, muscle comp
-% EEG_ica = pop_iclabel(EEG_ica,'default');
-% EEG_ica = pop_icflag(EEG_ica, [NaN, NaN; 0.8, 1; 0.8, 1; 0.8, 1; 0.8, 1;0.8, 1;NaN, NaN;]);
-% EEG = pop_subcomp(EEG_ica,find(EEG_ica.reject.gcompreject));
+% ICA
+EEG_ica = pop_runica(EEG,'icatype','runica','extend',1);
+% ICLabel and remove eye, muscle comp
+EEG_ica = pop_iclabel(EEG_ica,'default');
+EEG_ica = pop_icflag(EEG_ica, [NaN, NaN; 0.8, 1; 0.8, 1; 0.8, 1; 0.8, 1;0.8, 1;NaN, NaN;]);
+EEG = pop_subcomp(EEG_ica,find(EEG_ica.reject.gcompreject));
 
-%% savefile
-pop_saveset(EEG, [savepath,filename]);
+% savefile
+pop_saveset(EEG, [savepath,filename{i}(1:end-4)]);
+% fprintf('Completed %s\n',filename{i});
+end
 
+disp('DONE')

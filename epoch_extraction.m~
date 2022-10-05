@@ -1,0 +1,21 @@
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
+savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/'; % Correct the synchronization issue in epoch_ez and create new epoch.
+
+filename_list = reshape({dir([filepath,'*Oddball*']).name},2,[])';
+save_epoch = cell(size(filename_list,1),1);
+
+parfor i = 1:size(filename_list,1)
+    filename = filename_list{i};    
+    EEG_noHm = pop_loadset([filepath,filename_list{i,1}]);
+    EEG_Hm = pop_loadset([filepath,filename_list{i,2}]);
+    [~, ~, ~, ~, ~, epoch_struct_noHm, ~]...
+    = epoch_ez([loadpath,sprintf('%s_Inner.xdf',filename)], EEG_noHm);
+    [~, ~, ~, ~, ~, epoch_struct_Hm, ~]...
+    = epoch_ez([loadpath,sprintf('%s_Outer.xdf',filename)], EEG_Hm);
+
+end
+
+
+save([savepath,'new_s03_epoch.mat'],'-v7.3','epoch_struct_noHm','epoch_struct_Hm');
+
+disp('Done')
