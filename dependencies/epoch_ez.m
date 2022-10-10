@@ -70,24 +70,29 @@ end
 nbchan = EEG.nbchan;
 
 % % Prevent event marker error 
-% cond_i = EEG.filename(9);
-% if EEG.filename(3)=='1'
-%     switch cond_i
-%         case '1'
-%             reg_txt = 'Ring 0';
-%         case '2'
-%             reg_txt = 'Ring 1';
-%     end
-% else
-%     reg_txt = 'Ring 0';
-% end
+cond_i = EEG.filename(9);
+if EEG.filename(3)=='1'
+    switch cond_i
+        case '1'
+            reg_txt = 'Ring 0';
+        case '2'
+            reg_txt = 'Ring 1';
+    end
+else
+    reg_txt = 'Ring 0';
+end
 
 %% find out stimulus onset time
-% idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type});
-idx_dev = cellfun(@(x) ~isempty(regexp(x, '\(R\)', 'ONCE')), {EEG.event.type});
-% idx_dev = idx_dev & idx_cond;
-idx_std = cellfun(@(x) ~isempty(regexp(x, '\(L\)', 'ONCE')), {EEG.event.type});
-% idx_std = idx_std & idx_cond;
+if EEG.srate ==512
+    idx_dev = cellfun(@(x) ~isempty(regexp(x, '\(R\)', 'ONCE')), {EEG.event.type});
+    idx_std = cellfun(@(x) ~isempty(regexp(x, '\(L\)', 'ONCE')), {EEG.event.type});
+else
+    idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type}); 
+    idx_dev = cellfun(@(x) ~isempty(regexp(x, 'Deviant', 'ONCE')), {EEG.event.type});
+    idx_std = cellfun(@(x) ~isempty(regexp(x, 'Standard', 'ONCE')), {EEG.event.type});
+    idx_std = idx_std & idx_cond;
+    idx_dev = idx_dev & idx_cond;
+end
 idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type});
 % idx_tri(find(idx_tri,2,'last')) = false;
 idx_blue = cellfun(@(x) ~isempty(regexp(x, 'blue_cube', 'ONCE')), {EEG.event.type});
@@ -153,18 +158,17 @@ downLoc = num_loc(2,:);
 leftLoc = num_loc(1,:);
 rightLoc = num_loc(4,:);
 
-up_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',upLoc),'match','ONCE')),{EEG.event.type});
-down_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',downLoc),'match','ONCE')),{EEG.event.type});
-left_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',leftLoc),'match','ONCE')),{EEG.event.type});
-right_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',rightLoc),'match','ONCE')),{EEG.event.type});
-
-up_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 1','ONCE')),{EEG.event.type});
-down_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 3','ONCE')),{EEG.event.type});
-left_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 2','ONCE')),{EEG.event.type});
-right_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 0','ONCE')),{EEG.event.type});
-
-
-
+if EEG.srate==512
+    up_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 1','ONCE')),{EEG.event.type});
+    down_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 3','ONCE')),{EEG.event.type});
+    left_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 2','ONCE')),{EEG.event.type});
+    right_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 0','ONCE')),{EEG.event.type});
+else
+    up_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',upLoc),'match','ONCE')),{EEG.event.type});
+    down_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',downLoc),'match','ONCE')),{EEG.event.type});
+    left_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',leftLoc),'match','ONCE')),{EEG.event.type});
+    right_idx = cellfun(@(x) ~isempty(regexp(x,sprintf('(%.4g, %.4g, %.4g)',rightLoc),'match','ONCE')),{EEG.event.type});
+end
 
 std_up = up_idx(idx_std);
 std_down = down_idx(idx_std);
@@ -176,10 +180,6 @@ dev_left = left_idx(idx_dev);
 dev_right = right_idx(idx_dev);
 
 %% find GIP onset time
-% up_idx = cellfun(@(x) ~isempty(regexp(x,'(0.862, 2.101, 2.345)','match','ONCE')),{EEG_ica.event.type});
-% bot_idx = cellfun(@(x) ~isempty(regexp(x,'(0.862, 1.751, 2.345)','match','ONCE')),{EEG_ica.event.type});
-% left_idx = cellfun(@(x) ~isempty(regexp(x,'(0.687, 1.926, 2.345)','match','ONCE')),{EEG_ica.event.type});
-% right_idx = cellfun(@(x) ~isempty(regexp(x,'(1.037, 1.926, 2.345)','match','ONCE')),{EEG_ica.event.type});
 gip_up_idx = cellfun(@(x) ~isempty(regexp(x,'Up','match','ONCE')),{EEG.event.type});
 gip_down_idx = cellfun(@(x) ~isempty(regexp(x,'Bottom','match','ONCE')),{EEG.event.type});
 gip_left_idx = cellfun(@(x) ~isempty(regexp(x,'Left','match','ONCE')),{EEG.event.type});
@@ -326,24 +326,6 @@ if ~isempty(fix_struct.gap_detection.dataLose_idx)
     dLose_idx([fix_struct.gap_detection.dataLose_idx{:}]) = true;
 end
 
-% velocity_smooth_win_len = 40;
-% srate = round(fix_struct.srate);
-% calculate angular velocity
-% ang = nan(1,size(mv_hd,2));
-% v_ang = nan(1,size(mv_hd,2));
-% vel_win_len = round(0.001*velocity_smooth_win_len*srate/2);
-% for v_i = vel_win_len+1:size(mv_hd,2)-vel_win_len
-%     if ~isnan(mv_hd(1,v_i+[-vel_win_len,vel_win_len]))
-%         nomi = double(mv_hd(:,v_i-vel_win_len)'*mv_hd(:,v_i+vel_win_len));
-%         denomi = double((norm(mv_hd(:,v_i-vel_win_len))*norm(mv_hd(:,v_i+vel_win_len))));
-%         tolerance = 1 - cos(pi/180*0.1); % adding a 0.1 degree tolerance when calculating acos
-%         if nomi/denomi > 1 + tolerance
-%             error(sprintf('v_i = %d',v_i))
-%         end
-%         ang(v_i) = acos(nomi/denomi - tolerance)/pi*180;
-%         v_ang(v_i) = ang(v_i) / (0.001*velocity_smooth_win_len)/pi*180;
-%     end
-% end
 
 %% Interpretation
 % find out time point to interpt
@@ -417,10 +399,28 @@ behavi_dev = dev_epoch.data(nbchan+1:end,:,:);
 behavi_gstd = gip_std.data(nbchan+1:end,:,:);
 behavi_gdev = gip_dev.data(nbchan+1:end,:,:);
 % remove baseline
-std_epoch = pop_rmbase(std_epoch,[max(len_epoch(1),std_epoch.times(1)) 0],[]);
-dev_epoch = pop_rmbase(dev_epoch,[max(len_epoch(1),dev_epoch.times(1)) 0],[]);
-gip_std = pop_rmbase(gip_std,[max(len_epoch_grab(1),gip_std.times(1)) 0],[]);
-gip_dev = pop_rmbase(gip_dev,[max(len_epoch_grab(1),gip_dev.times(1)) 0],[]);
+std_base = mean(std_epoch.data(:,1:find(std_epoch.times==0,1),:),2);
+gip_count = 1;
+for t_i = 1:size(std_epoch.data,3)
+    std_epoch.data(:,:,t_i) = std_epoch.data(:,:,t_i) - std_base(:,:,t_i);
+    if ~isnan(gipStd_time(t_i))
+        gip_std.data(:,:,t_i) = gip_std.data(:,:,t_i) - std_base(:,:,t_i);
+        gip_count = gip_count+1;
+    end
+end
+dev_base = mean(dev_epoch.data(:,1:find(dev_epoch.times==0,1),:),2);
+gip_count = 1;
+for t_i = 1:size(dev_epoch.data,3)
+    dev_epoch.data(:,:,t_i) = dev_epoch.data(:,:,t_i) - dev_base(:,:,t_i);
+    if ~isnan(gipDev_time(t_i))
+        gip_dev.data(:,:,t_i) = gip_dev.data(:,:,t_i) - dev_base(:,:,t_i);
+        gip_count = gip_count+1;
+    end
+end    
+% std_epoch = pop_rmbase(std_epoch,[max(len_epoch(1),std_epoch.times(1)) 0],[]);
+% dev_epoch = pop_rmbase(dev_epoch,[max(len_epoch(1),dev_epoch.times(1)) 0],[]);
+% gip_std = pop_rmbase(gip_std,[max(len_epoch_grab(1),gip_std.times(1)) 0],[]);
+% gip_dev = pop_rmbase(gip_dev,[max(len_epoch_grab(1),gip_dev.times(1)) 0],[]);
 % restore behavioral data
 std_epoch.data(nbchan+1:end,:,:) = behavi_std;
 dev_epoch.data(nbchan+1:end,:,:) = behavi_dev;

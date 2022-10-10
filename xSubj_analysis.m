@@ -3,15 +3,26 @@
 % s05_epoch.mat seems to have strong artifacts in Hm_gip_Cz condition
 % subj_list = [1, 4:6, 8:10];
 filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
-subj_list = {dir([filepath, '*_epoch*']).name};
+subj_list = {dir([filepath, '*rmPreStim*']).name};
+% idx_new_resample = cellfun(@(x) ~isempty(regexp(x,'.*resample.*','once')),subj_list);
+% idx_old = cellfun(@(x) isempty(regexp(x,'new','once')),subj_list);
+% subj_list = subj_list(idx_new_resample | idx_old);
+% subj_list = subj_list(cellfun(@(x) isempty(regexp(x,'.*resample.*','once')),subj_list));
+savepath = filepath;
+
 epoch_lib = cell(2,length(subj_list));
 for i = 1:length(subj_list)
     load([filepath,subj_list{i}]);
-    epoch_lib{1,i} = epoch_struct_noHm;
-    epoch_lib{2,i} = epoch_struct_Hm;
+    if epoch_struct_noHm.std_epoch.srate == 512
+        epoch_lib{1,i} = my_resample(epoch_struct_noHm);
+        epoch_lib{2,i} = my_resample(epoch_struct_Hm);
+    else
+        epoch_lib{1,i} = epoch_struct_noHm;
+        epoch_lib{2,i} = epoch_struct_Hm;
+    end
 end
 % savepath = filepath;
-% save([savepath,'epoch_lib_20221003.mat'],'-v7.3','epoch_lib');
+save([savepath,'epoch_lib_20221009_rmPreStim.mat'],'-v7.3','epoch_lib');
 disp('Done')
 
 %%
@@ -22,14 +33,20 @@ load([savepath,'epoch_lib_20221003.mat'],'epoch_lib');
 %%
 cond_name = 'noHm';
 ev_name = 'gip';
-tar_Ch = 'POz';
+tar_Ch = 'Cz';
 filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
-subj_list = {dir([filepath, '*_epoch*']).name};
-% subj_list = [1,4:6,8:10];
+subj_list = {dir([filepath, '*rmPreStim*']).name};
+subj_list = subj_list(2:end);
+% idx_new_resample = cellfun(@(x) ~isempty(regexp(x,'.*resample.*','once')),subj_list);
+% idx_old = cellfun(@(x) isempty(regexp(x,'new','once')),subj_list);
+% subj_list = subj_list(idx_new_resample | idx_old);
+% subj_list = subj_list(cellfun(@(x) isempty(regexp(x,'.*resample.*','once')),subj_list));
 
 
-len_stim = epoch_lib{1}.std_epoch.pnts;
-len_gip = epoch_lib{1}.gip_std.pnts;
+
+
+len_stim = size(epoch_lib{1}.std_epoch.data,2);
+len_gip = size(epoch_lib{1}.gip_std.data,2);
 
 switch ev_name
     case 'stim'
@@ -54,6 +71,7 @@ tri_stack = [];
 cir_time = [];
 tri_time = [];
 
+% for i = [1:8, 9,10,12:15]
 % for i = 1:length(subj_list)
 for i = 1:8
     switch cond_name
@@ -88,11 +106,11 @@ for i = 1:8
 end
 
 %
-sf = 5;
-neye_lib = sf*((eye_lib-min(eye_lib,[],'all'))./(max(eye_lib,[],'all')-min(eye_lib,[],'all')));
-neye_lib = neye_lib - min(neye_lib,[],'all');
-nhead_lib = sf*((head_lib-min(head_lib,[],'all'))./(max(head_lib,[],'all')-min(head_lib,[],'all')));
-nhead_lib = nhead_lib - min(nhead_lib,[],'all');
+% sf = 5;
+% neye_lib = sf*((eye_lib-min(eye_lib,[],'all'))./(max(eye_lib,[],'all')-min(eye_lib,[],'all')));
+% neye_lib = neye_lib - min(neye_lib,[],'all');
+% nhead_lib = sf*((head_lib-min(head_lib,[],'all'))./(max(head_lib,[],'all')-min(head_lib,[],'all')));
+% nhead_lib = nhead_lib - min(nhead_lib,[],'all');
 %
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
 % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
@@ -154,39 +172,40 @@ ylabel('Amplitude (\muV)')
 title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tar_Ch))
 
 % sanity check on ERPImage
-figure
-[sort_time,sort_idx] = sort(cir_time);
-plt_data = cir_stack(sort_idx,:);
-% plt_data = cir_lib(1:8,:);
-subplot(2,1,1)
-h = pcolor([plt_data,nan(size(plt_data,1),1);nan(1,size(plt_data,2)+1)]);
-set(h,'edgecolor','none')
-hold on
-[~,v_pos] = min(abs(plt_t));
-vline(v_pos,'k--','linewidth',50);
-colorbar
-caxis([min([cir_lib(:);tri_lib(:)]),max([cir_lib(:);tri_lib(:)])])
-set(gca,'xtick',1:50:size(plt_data,2))
-set(gca,'xticklabel',round(plt_t(1:50:end)))
-set(gca,'fontsize',20)
-title(sprintf('Cir, %s lock - %s (%s)', ev_name, cond_name, tar_Ch))
-subplot(2,1,2)
-[~,sort_idx] = sort(tri_time);
-plt_data = tri_stack(sort_idx,:);
-% plt_data = tri_lib(1:8,:);
-h = pcolor([plt_data,nan(size(plt_data,1),1);nan(1,size(plt_data,2)+1)]);
-set(h,'edgecolor','none')
-hold on 
-[~,v_pos] = min(abs(plt_t));
-vline(v_pos,'k--','linewidth',50);
-colorbar
-caxis([min([cir_lib(:);tri_lib(:)]),max([cir_lib(:);tri_lib(:)])])
-xlabel('Time (ms)')
-set(gca,'xtick',1:50:size(plt_data,2))
-set(gca,'xticklabel',round(plt_t(1:50:end)))
-title(sprintf('Tri, %s lock - %s (%s)', ev_name, cond_name, tar_Ch))
-set(gca,'fontsize',20)
-set(gcf,'color',[1 1 1])
+% figure
+% [sort_time,sort_idx] = sort(cir_time);
+% plt_data = cir_stack(sort_idx,:);
+% % plt_data = cir_lib(1:8,:);
+% subplot(2,1,1)
+% h = pcolor([plt_data,nan(size(plt_data,1),1);nan(1,size(plt_data,2)+1)]);
+% set(h,'edgecolor','none')
+% hold on
+% [~,v_pos] = min(abs(plt_t));
+% plot([v_pos,v_pos],[1,size(plt_data,1)],'k--','linewidth',3);
+% colorbar
+% caxis([min([cir_lib(:);tri_lib(:)]),max([cir_lib(:);tri_lib(:)])])
+% set(gca,'xtick',1:50:size(plt_data,2))
+% set(gca,'xticklabel',round(plt_t(1:50:end)))
+% set(gca,'fontsize',20)
+% title(sprintf('Cir, %s lock - %s (%s)', ev_name, cond_name, tar_Ch))
+% subplot(2,1,2)
+% % [~,sort_idx] = sort(tri_time);
+% % plt_data = tri_stack(sort_idx,:);
+% % plt_data = tri_lib(1:8,:);
+% plt_data = tri_stack;
+% h = pcolor([plt_data,nan(size(plt_data,1),1);nan(1,size(plt_data,2)+1)]);
+% set(h,'edgecolor','none')
+% hold on 
+% [~,v_pos] = min(abs(plt_t));
+% plot([v_pos,v_pos],[1,size(plt_data,1)],'k--','linewidth',3);
+% colorbar
+% caxis([min([cir_lib(:);tri_lib(:)]),max([cir_lib(:);tri_lib(:)])])
+% xlabel('Time (ms)')
+% set(gca,'xtick',1:50:size(plt_data,2))
+% set(gca,'xticklabel',round(plt_t(1:50:end)))
+% title(sprintf('Tri, %s lock - %s (%s)', ev_name, cond_name, tar_Ch))
+% set(gca,'fontsize',20)
+% set(gcf,'color',[1 1 1])
 
 %% Laterialized Readinese Potential (LRP)
 cond_name = 'Hm';

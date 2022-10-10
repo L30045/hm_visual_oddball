@@ -3,18 +3,20 @@ eegpath = which('eeglab.m');
 eegpath = eegpath(1:end-8);
 
 %% load data
-% filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
-% filename = {dir([filepath,'*.xdf']).name};
-% savepath = '/home/yuan/Documents/2021 HM_visual_oddball/preproc_data/';
-filepath = 'C:\Users\Yuan\OneDrive\Desktop\sub1163\';
-filename = '2004_SSVEP_1163_condition.xdf';
-EEG = pop_loadxdf([filepath,filename]);
-savepath = filepath;
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
+filename = {dir([filepath,'*.xdf']).name};
+savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
+% filepath = 'C:\Users\Yuan\OneDrive\Desktop\sub1163\';
+% filename = '2004_SSVEP_1163_condition.xdf';
+% EEG = pop_loadxdf([filepath,filename]);
+% savepath = filepath;
 
 
 %% preprocessing
 parfor i = 1:length(filename)
 EEG = pop_loadxdf([filepath,filename{i}]);
+% resample to 500Hz
+EEG = pop_resample(EEG,500);
 % band pass
 EEG = pop_eegfiltnew(EEG,1,50);
 % rereference
@@ -51,7 +53,7 @@ EEG_ica = pop_icflag(EEG_ica, [NaN, NaN; 0.8, 1; 0.8, 1; 0.8, 1; 0.8, 1;0.8, 1;N
 EEG = pop_subcomp(EEG_ica,find(EEG_ica.reject.gcompreject));
 
 % savefile
-pop_saveset(EEG, [savepath,filename{i}(1:end-4)]);
+pop_saveset(EEG, [savepath,filename{i}(1:end-4),'_resample_500Hz']);
 % fprintf('Completed %s\n',filename{i});
 end
 
