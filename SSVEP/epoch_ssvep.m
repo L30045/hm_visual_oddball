@@ -9,35 +9,7 @@ function epoch_struct = epoch_ssvep(filename,rmbase_flag,rmtrial_flag)
 %           (NOTE: I run the preprocessing for EEG before epoching.)
 
 % Output:
-%       data_struct:
-%           contain the raw behavioral data from eye tracker. See details
-%           in >> help load_eyetracking_hm
-%       fix_struct:
-%           contain the results of fixation calculation. See details in >>
-%           help cal_fix_pupil
-%       t_c:
-%           Time stamps of the eye gaze stream
-%       t_std:
-%           Time stamps of the standard trials after sychronizing
-%           with t_c
-%       t_dev:
-%           Time stamps of the deviant trials after sychronizing
-%           with t_c
 %       epoch_struct:
-%           EEG epochs time-lock to different events.
-%           (1) std_epoch: standard trials time-lock to stimulus onset
-%           (2) dev_epoch: deviant trials time-lock to stimulus onset
-%           (3) grab_epoch: standard trials time-lock to response
-%           (4) fix_epoch: fixation trials time-lock to fixation onset
-%           (5) fix_std: standard trials time-lock to fixation onset
-%           (6) fix_dev: deviant trials time-lock to fixation onset
-%           (7) ud_epoch: up and down trials time-lock to stimulus onset
-%           (8) lr_epoch: left and right trials time-lock to stimulus onset
-%           (9) gip_std: standard trials time-lock to GIP onset
-%           (10) gip_dev: deviant trials time-lock to GIP onset
-%           (11) event_time: Event onset time and epoch length. The order
-%                are the same as epoch_struct.
-
 
 %% parameter setting
 % epoch length

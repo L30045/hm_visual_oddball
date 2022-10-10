@@ -2,8 +2,12 @@
 filepath = 'C:\Users\Yuan\OneDrive\Desktop\sub1163\';
 filename = '2004_SSVEP_1163_condition.xdf';
 
-epoch_struct = epoch_ssvep([filepath,filename]);
+rmbase_flag = true;
+rmtrial_flag = false;
 
+epoch_struct = epoch_ssvep([filepath,filename],rmbase_flag,rmtrial_flag);
+
+%% FFT
 test_epoch = epoch_struct.ring1.stim.up;
 tarCh = {'O1','O2','Oz'};
 ev_name = test_epoch.event(find(cellfun(@(x) ~isempty(regexp(x,'Frequency','once')), {test_epoch.event.type}),1)).type;
@@ -12,8 +16,7 @@ ev_name = ev_name{4};
 tarFreq = str2double(ev_name(regexp(ev_name,'\:')+2:end));
 plt_ch_idx = ismember({test_epoch.chanlocs.labels},tarCh);
 tar_data = test_epoch.data(ismember({test_epoch.chanlocs.labels},tarCh),:,:);
-
-%% FFT
+% FFT
 Fs = test_epoch.srate;
 plt_t = test_epoch.times;
 plt_f = 1:20; % upper Hz
@@ -35,7 +38,9 @@ plot(plt_f, mean(plt_fft,2),'linewidth',3,'displayname',sprintf('Target Freq: %d
 legend
 grid on
 xlabel('Frequency (Hz)')
-ylabel('Frequency (Hz)')
+ylabel('Amplitude (V^2)')
+set(gca,'fontsize',10)
+
 
 %% Behavior
 ang_lib = cell(4, 2); % direction * ring
@@ -129,3 +134,33 @@ for j = 1:21
     legend
     saveas(gcf, sprintf('%d.png', j))
 end
+
+
+%% TRCA
+% tarCh = {test_epoch.up.chanlocs([16:27, 52:59]).labels};
+tarCh = {'Oz','O1','O2'};
+output = reshape2TRCA(epoch_struct.ring1.stim, tarCh);
+[nb_targ,nb_chan,nb_sample,nb_block] = size(output);
+fs = test_epoch.up.srate;
+num_fbs = 3;
+is_ensemble = 0;
+accs = zeros(nb_block,1);
+labels = 8:11;
+
+% Estimate classification performance
+for loocv_i = 1:1:nb_block
+    % Training stage 
+    traindata = output;
+    traindata(:, :, :, loocv_i) = [];
+    model = train_trca(traindata, fs, num_fbs);
+    
+    % Test stage
+    testdata = squeeze(output(:, :, :, loocv_i));
+    estimated = test_trca(testdata, model, is_ensemble);
+    
+    % Evaluation 
+    is_correct = (estimated==labels);
+    accs(loocv_i) = mean(is_correct)*100;
+    fprintf('Trial %d: Accuracy = %2.2f%%\n',loocv_i, accs(loocv_i));
+end % loocv_i
+

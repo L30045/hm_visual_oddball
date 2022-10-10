@@ -134,3 +134,33 @@ for j = 1:21
     legend
     saveas(gcf, sprintf('%d.png', j))
 end
+
+
+%% TRCA
+% tarCh = {test_epoch.up.chanlocs([16:27, 52:59]).labels};
+tarCh = {'Oz','O1','O2'};
+output = reshape2TRCA(epoch_struct.ring1.stim, tarCh);
+[nb_targ,nb_chan,nb_sample,nb_block] = size(output);
+fs = test_epoch.up.srate;
+num_fbs = 3;
+is_ensemble = 0;
+accs = zeros(nb_block,1);
+labels = 8:11;
+
+% Estimate classification performance
+for loocv_i = 1:1:nb_block
+    % Training stage 
+    traindata = output;
+    traindata(:, :, :, loocv_i) = [];
+    model = train_trca(traindata, fs, num_fbs);
+    
+    % Test stage
+    testdata = squeeze(output(:, :, :, loocv_i));
+    estimated = test_trca(testdata, model, is_ensemble);
+    
+    % Evaluation 
+    is_correct = (estimated==labels);
+    accs(loocv_i) = mean(is_correct)*100;
+    fprintf('Trial %d: Accuracy = %2.2f%%\n',loocv_i, accs(loocv_i));
+end % loocv_i
+
