@@ -17,7 +17,7 @@ len_zero_smpl = find(time==0,1); % sample
 % SSVEP offset
 len_delay_s = 0.13; % second
 % SSVEP duration 
-len_gaze_s = 0.5; % second
+len_gaze_s = 1; % second
 % Data length [samples]
 len_gaze_smpl = round(len_gaze_s*fs);           
 % Visual latency [samples]

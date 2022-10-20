@@ -40,8 +40,9 @@ fb_coefs = [1:model.num_fbs].^(-1.25)+0.25;
 
 for targ_i = 1:1:model.num_targs
     test_tmp = squeeze(eeg(targ_i, :, :));
+    testdata = test_tmp;
     for fb_i = 1:1:model.num_fbs
-        testdata = filterbank(test_tmp, model.fs, fb_i);
+%         testdata = filterbank(test_tmp, model.fs, fb_i);
         for class_i = 1:1:model.num_targs
             traindata =  squeeze(model.trains(class_i, fb_i, :, :));
             if ~is_ensemble
