@@ -3,7 +3,7 @@
 % s05_epoch.mat seems to have strong artifacts in Hm_gip_Cz condition
 % subj_list = [1, 4:6, 8:10];
 filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
-subj_list = {dir([filepath, '*rmPreStim*']).name};
+subj_list = {dir([filepath, 'rmPreStim*']).name};
 % idx_new_resample = cellfun(@(x) ~isempty(regexp(x,'.*resample.*','once')),subj_list);
 % idx_old = cellfun(@(x) isempty(regexp(x,'new','once')),subj_list);
 % subj_list = subj_list(idx_new_resample | idx_old);
@@ -13,16 +13,16 @@ savepath = filepath;
 epoch_lib = cell(2,length(subj_list));
 for i = 1:length(subj_list)
     load([filepath,subj_list{i}]);
-    if epoch_struct_noHm.std_epoch.srate == 512
-        epoch_lib{1,i} = my_resample(epoch_struct_noHm);
-        epoch_lib{2,i} = my_resample(epoch_struct_Hm);
-    else
+%     if epoch_struct_noHm.std_epoch.srate == 512
+%         epoch_lib{1,i} = my_resample(epoch_struct_noHm);
+%         epoch_lib{2,i} = my_resample(epoch_struct_Hm);
+%     else
         epoch_lib{1,i} = epoch_struct_noHm;
         epoch_lib{2,i} = epoch_struct_Hm;
-    end
+%     end
 end
 % savepath = filepath;
-save([savepath,'epoch_lib_20221009_rmPreStim.mat'],'-v7.3','epoch_lib');
+save([savepath,'epoch_lib_20221014_rmPreStim.mat'],'-v7.3','epoch_lib');
 disp('Done')
 
 %%
@@ -31,11 +31,18 @@ savepath = filepath;
 load([savepath,'epoch_lib_20221003.mat'],'epoch_lib');
 
 %%
+tmp_ch = cellfun(@(x) {x.std_epoch.chanlocs.labels}, epoch_lib(1,:),'uniformoutput',0);
+[~, tmp_idx] = max(cellfun(@length, tmp_ch));
+common_ch = tmp_ch{tmp_idx};
+for ch_i = 1:size(epoch_lib,2)
+    common_ch = intersect(common_ch, tmp_ch{ch_i});
+end
+
 cond_name = 'noHm';
 ev_name = 'gip';
-tar_Ch = 'Cz';
+tar_Ch = 'Fp1';
 filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
-subj_list = {dir([filepath, '*rmPreStim*']).name};
+subj_list = {dir([filepath, 'rmPreStim*']).name};
 subj_list = subj_list(2:end);
 % idx_new_resample = cellfun(@(x) ~isempty(regexp(x,'.*resample.*','once')),subj_list);
 % idx_old = cellfun(@(x) isempty(regexp(x,'new','once')),subj_list);
@@ -72,8 +79,8 @@ cir_time = [];
 tri_time = [];
 
 % for i = [1:8, 9,10,12:15]
-% for i = 1:length(subj_list)
-for i = 1:8
+for i = 1:length(subj_list)
+% for i = 1:8
     switch cond_name
         case 'noHm'
             cond_struct = epoch_lib{1,i};
@@ -623,7 +630,103 @@ nb_gip_dev_cond2 = cellfun(@(x) size(x.gip_dev.data,3), epoch_lib(2,:));
 % Epoch by GIP onset
 % disable baseline removal
 
+%% Merge epoch_lib to perform ERPImage using EEGLAB function
+tarCh = {'POz'};
+cond_i = 2;
+merge_stim_cir = eeg_emptyset();
+merge_stim_tri = eeg_emptyset();
+merge_gip_cir = eeg_emptyset();
+merge_gip_tri = eeg_emptyset();
+
+for i = 1:size(epoch_lib,2)
+    tmp_eeg_1 = pop_select(epoch_lib{cond_i,i}.std_epoch,'channel',tarCh);
+    tmp_eeg_2 = pop_select(epoch_lib{cond_i,i}.dev_epoch,'channel',tarCh);
+    tmp_eeg_3 = pop_select(epoch_lib{cond_i,i}.gip_std,'channel',tarCh);
+    tmp_eeg_4 = pop_select(epoch_lib{cond_i,i}.gip_dev,'channel',tarCh);
+    if merge_stim_cir.nbchan==0
+        merge_stim_cir = tmp_eeg_1;
+        merge_stim_tri = tmp_eeg_2;
+        merge_gip_cir = tmp_eeg_3;
+        merge_gip_tri = tmp_eeg_4;
+    else
+        merge_stim_cir = pop_mergeset(tmp_eeg_1,merge_stim_cir);
+        merge_stim_tri = pop_mergeset(tmp_eeg_2,merge_stim_tri);
+        merge_gip_cir = pop_mergeset(tmp_eeg_3,merge_gip_cir);
+        merge_gip_tri = pop_mergeset(tmp_eeg_4,merge_gip_tri);
+    end
+end
+    
+%% plot ERPImage
+plt_EEG = merge_stim_cir;
+plt_EEG = pop_autorej(plt_EEG,'threshold',100,'nogui','on');
+idx_cir_1 = cellfun(@(x) ~isempty(regexp(x,'Standard','once')),{plt_EEG.event.type});
+idx_cir_2 = cellfun(@(x) ~isempty(regexp(x,'\(L\)','once')),{plt_EEG.event.type});
+idx_cir = idx_cir_1 | idx_cir_2;
+idx_tri_1 = cellfun(@(x) ~isempty(regexp(x,'Deviant','once')),{plt_EEG.event.type});
+idx_tri_2 = cellfun(@(x) ~isempty(regexp(x,'\(R\)','once')),{plt_EEG.event.type});
+idx_tri = idx_tri_1 | idx_tri_2;
 
 
+% sort_name = {plt_EEG.event(idx_cir).type};
+% sort_name = {plt_EEG.event(idx_tri).type};
+sort_name = {'circle_gip_start'};
+% sort_name = {'triangle_gip_start'};
+smoothing = 10;
+figure; pop_erpimage(plt_EEG,1, [1],[[]],tarCh{1},smoothing,1,sort_name,[],'latency','yerplabel','\muV','erp','on','cbar','on','topo', { [1] plt_EEG.chanlocs plt_EEG.chaninfo } );
 
+%% plot ERP
+ev_name = 'gip';
+cond_name = 'Hm';
+plt_EEG1 = merge_gip_cir;
+plt_EEG2 = merge_gip_tri;
+% plt_EEG1 = pop_eegfiltnew(plt_EEG1,5,20);
+% plt_EEG2 = pop_eegfiltnew(plt_EEG2,5,20);
+plt_EEG1 = pop_autorej(plt_EEG1,'threshold',100,'nogui','on');
+plt_EEG2 = pop_autorej(plt_EEG2,'threshold',100,'nogui','on');
+% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(length(subj_list)))};
+% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+figure
+plt_t = plt_EEG1.times;
+% >> Triangle
+ht = shadedErrorBar(plt_t, squeeze(plt_EEG2.data)', shaded_method,'lineprops',...
+    {'color','b','linewidth',3,'DisplayName','Standard'});
+ht.patch.FaceAlpha = 0.1;
+grid on
+hold on
+% >> Circle
+hc = shadedErrorBar(plt_t, squeeze(plt_EEG1.data)', shaded_method,'lineprops',...
+    {'color','r','linewidth',3,'DisplayName','Deviant'});
+hc.patch.FaceAlpha = 0.1;
+xline(0,'k-','DisplayName',ev_name,'linewidth',3)
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
+set(gca,'fontsize',30)
+set(gcf,'color',[1 1 1])
+set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
+xlabel('Time (ms)')
+ylabel('Amplitude (\muV)')
+title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh{1}))
 
+%% 
+ev_name = 'gip';
+cond_name = 'Hm';
+plt_EEG1 = merge_gip_cir;
+plt_EEG2 = merge_gip_tri;
+plt_EEG1 = pop_autorej(plt_EEG1,'threshold',100,'nogui','on');
+plt_EEG2 = pop_autorej(plt_EEG2,'threshold',100,'nogui','on');
+plt_t = plt_EEG1.times;
+cir_data = mean(plt_EEG1.data,3);
+tri_data = mean(plt_EEG2.data,3);
+figure
+plot(plt_t,cir_data,'r-','linewidth',3,'displayname','Deviant')
+hold on
+grid on
+plot(plt_t,tri_data,'b-','linewidth',3,'displayname','Standard')
+plot(plt_t,cir_data-tri_data,'g-','linewidth',3,'displayname','Cir-Tri')
+legend
+set(gca,'fontsize',30)
+set(gcf,'color',[1 1 1])
+set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
+xlabel('Time (ms)')
+ylabel('Amplitude (\muV)')
+title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh{1}))

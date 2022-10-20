@@ -4,7 +4,7 @@ loadpath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
 savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/'; % Correct the synchronization issue in epoch_ez and create new epoch.
 
 filename_list = reshape({dir([loadpath,'*Oddball*']).name},2,[])';
-inner_list = filename_list(:,1);
+inner_list = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,1));
 outer_list = filename_list(:,2);
 
 parfor i = 1:size(filename_list,1)

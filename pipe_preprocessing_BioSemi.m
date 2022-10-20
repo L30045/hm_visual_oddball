@@ -15,12 +15,17 @@ savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
 %% preprocessing
 parfor i = 1:length(filename)
 EEG = pop_loadxdf([filepath,filename{i}]);
-% resample to 500Hz
-EEG = pop_resample(EEG,500);
+% NOTE: Weird 10Hz noise appears if resample first than bandpass on EX1,
+% causing the contamination after rereference. This doesn't happen in
+% Smarting.
+% Question: Do all the recordings use EX1, EX2? (Left/Right mastoid)
 % band pass
 EEG = pop_eegfiltnew(EEG,1,50);
+% resample to 250Hz
+EEG = pop_resample(EEG,250);
 % rereference
 EEG = pop_reref(EEG,{'EX1','EX2'});
+
 % look up channel location
 % Rename channels label
 chLabel_new = {'Fp1','AF7','AF3','F1','F3','F5','F7','FT7','FC5','FC3',...
@@ -30,6 +35,7 @@ chLabel_new = {'Fp1','AF7','AF3','F1','F3','F5','F7','FT7','FC5','FC3',...
                'FT8','FC6','FC4','FC2','FCz','Cz','C2','C4','C6','T8',...
                'TP8','CP6','CP4','CP2','P2','P4','P6','P8','P10','PO8','PO4','O2'};
 EEG = pop_select(EEG,'nochannel',{'Trig1','EX3','EX4','EX5','EX6','EX7','EX8'});
+% EEG = pop_select(EEG,'nochannel',{'Trig1','EX1','EX2','EX3','EX4','EX5','EX6','EX7','EX8'});
 [EEG.chanlocs.labels] = deal(chLabel_new{:});
 % Add channel location    
 EEG = pop_chanedit(EEG, 'lookup',[eegpath,'plugins/dipfit/standard_BEM/elec/standard_1005.elc']); % MNI
@@ -53,7 +59,7 @@ EEG_ica = pop_icflag(EEG_ica, [NaN, NaN; 0.8, 1; 0.8, 1; 0.8, 1; 0.8, 1;0.8, 1;N
 EEG = pop_subcomp(EEG_ica,find(EEG_ica.reject.gcompreject));
 
 % savefile
-pop_saveset(EEG, [savepath,filename{i}(1:end-4),'_resample_500Hz']);
+pop_saveset(EEG, [savepath,filename{i}(1:end-4),'_resample_250Hz']);
 % fprintf('Completed %s\n',filename{i});
 end
 

@@ -70,12 +70,12 @@ end
 nbchan = EEG.nbchan;
 
 % % Prevent event marker error 
-cond_i = EEG.filename(9);
+condname = EEG.filename(5);
 if EEG.filename(3)=='1'
-    switch cond_i
-        case '1'
+    switch condname
+        case 'I'
             reg_txt = 'Ring 0';
-        case '2'
+        case 'O'
             reg_txt = 'Ring 1';
     end
 else
@@ -83,7 +83,7 @@ else
 end
 
 %% find out stimulus onset time
-if EEG.srate ==512
+if ~strcmp(EEG.filename(1),'s')
     idx_dev = cellfun(@(x) ~isempty(regexp(x, '\(R\)', 'ONCE')), {EEG.event.type});
     idx_std = cellfun(@(x) ~isempty(regexp(x, '\(L\)', 'ONCE')), {EEG.event.type});
 else
@@ -158,7 +158,7 @@ downLoc = num_loc(2,:);
 leftLoc = num_loc(1,:);
 rightLoc = num_loc(4,:);
 
-if EEG.srate==512
+if ~strcmp(EEG.filename(1),'s')
     up_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 1','ONCE')),{EEG.event.type});
     down_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 3','ONCE')),{EEG.event.type});
     left_idx = cellfun(@(x) ~isempty(regexp(x,'index\(.\)\:\ 2','ONCE')),{EEG.event.type});
