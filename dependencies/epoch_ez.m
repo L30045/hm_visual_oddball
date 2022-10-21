@@ -469,6 +469,11 @@ if all(ismember({'circle_fix_start','triangle_fix_start'},{EEG.event.type}))
     fix_std.data(nbchan+1:end,:,:) = behavi_fstd;
     fix_dev.data(nbchan+1:end,:,:) = behavi_fdev;
     fix_blue.data(nbchan+1:end,:,:) = behavi_fblue;
+else
+    fix_epoch = [];
+    fix_std = [];
+    fix_dev = [];
+    fix_blue = [];
 end
 
 
@@ -504,7 +509,7 @@ event_time = struct('std_time',std_time,'dev_time',dev_time,'grab_time',grab_tim
 
 %% output
 epoch_struct = struct('std_epoch',std_epoch, 'dev_epoch',dev_epoch, 'grab_epoch',grab_epoch,...
-                      'fix_epoch',[], 'fix_std',[], 'fix_dev',[], 'fix_blue',[],...
+                      'fix_epoch',fix_epoch, 'fix_std',fix_std, 'fix_dev',fix_dev, 'fix_blue',fix_blue,...
                       'gip_std',gip_std, 'gip_dev',gip_dev,'event_time',event_time);
                   
 end
