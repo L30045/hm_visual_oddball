@@ -142,7 +142,7 @@ t_dev = t_dev_ori;
 %they were mutually trail exclusive i.e. both do not occur in the same trail)
 
 % gather 4 location
-tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,'Ring','ONCE')),{EEG.event.type})).type});
+tar_ev = unique({EEG.event(cellfun(@(x) ~isempty(regexp(x,reg_txt,'ONCE')),{EEG.event.type})).type});
 tar_ev = cellfun(@split ,unique(cellfun(@(x) x(regexp(x,'(')+1:end-1), tar_ev, 'uniformoutput',0)),'uniformoutput',0);
 num_loc = zeros(3,4);
 for i = 1:4
