@@ -26,20 +26,20 @@ save([savepath,'epoch_lib_rmPreStim.mat'],'-v7.3','epoch_lib');
 disp('Done')
 
 %%
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+filepath = '\\hoarding\yuan\Documents\2021 HM_visual_oddball\dataset\new epoch\';
 savepath = filepath;
-load([savepath,'epoch_lib_20221003.mat'],'epoch_lib');
+load([savepath,'epoch_lib_rmPreStim_with_s05.mat'],'epoch_lib');
 
 %%
-tmp_ch = cellfun(@(x) {x.std_epoch.chanlocs.labels}, epoch_lib(1,:),'uniformoutput',0);
-[~, tmp_idx] = max(cellfun(@length, tmp_ch));
-common_ch = tmp_ch{tmp_idx};
-for ch_i = 1:size(epoch_lib,2)
-    common_ch = intersect(common_ch, tmp_ch{ch_i});
-end
+% tmp_ch = cellfun(@(x) {x.std_epoch.chanlocs.labels}, epoch_lib(1,:),'uniformoutput',0);
+% [~, tmp_idx] = max(cellfun(@length, tmp_ch));
+% common_ch = tmp_ch{tmp_idx};
+% for ch_i = 1:size(epoch_lib,2)
+%     common_ch = intersect(common_ch, tmp_ch{ch_i});
+% end
 
-cond_name = 'Hm';
-ev_name = 'stim';
+cond_name = 'noHm';
+ev_name = 'fix';
 tar_Ch = 'Cz';
 filepath = '//hoarding/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
 subj_list = {dir([filepath, 'rmPreStim*']).name};
@@ -774,10 +774,10 @@ is_fix_gip_cir = cellfun(@(x) ismember('circle_fix_start',{x.gip_std.event.type}
 is_fix_gip_tri = cellfun(@(x) ismember('triangle_fix_start',{x.gip_dev.event.type}), epoch_lib(:));
 % epoch_lib{9} (which is epoch_lib{1,5}) has a fixation cover the whole
 % recording. Because the eye direction data are all zeros.
+% All other recordings has fixation
 
-nb_fix = cellfun(@(x) [length(x.event_time.fixStd_time), length(x.event_time.fixDev_time), length(x.event_time.fixAll_time)], epoch_lib(:), 'uniformoutput',0);
+nb_fix = cellfun(@(x) [sum(isnan(x.event_time.fixStd_time)), sum(isnan(x.event_time.fixDev_time))], epoch_lib(:), 'uniformoutput',0);
 nb_trial = cellfun(@(x) [size(x.std_epoch.data,3), size(x.dev_epoch.data,3)], epoch_lib(:), 'uniformoutput',0);
-
-
+cellfun(@(x,y) x(1:2)-y, nb_fix, nb_trial)
 
 
