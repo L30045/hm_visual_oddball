@@ -404,7 +404,7 @@ gip_count = 1;
 for t_i = 1:size(std_epoch.data,3)
     std_epoch.data(:,:,t_i) = std_epoch.data(:,:,t_i) - std_base(:,:,t_i);
     if ~isnan(gipStd_time(t_i))
-        gip_std.data(:,:,t_i) = gip_std.data(:,:,t_i) - std_base(:,:,t_i);
+        gip_std.data(:,:,gip_count) = gip_std.data(:,:,gip_count) - std_base(:,:,t_i);
         gip_count = gip_count+1;
     end
 end
@@ -413,7 +413,7 @@ gip_count = 1;
 for t_i = 1:size(dev_epoch.data,3)
     dev_epoch.data(:,:,t_i) = dev_epoch.data(:,:,t_i) - dev_base(:,:,t_i);
     if ~isnan(gipDev_time(t_i))
-        gip_dev.data(:,:,t_i) = gip_dev.data(:,:,t_i) - dev_base(:,:,t_i);
+        gip_dev.data(:,:,gip_count) = gip_dev.data(:,:,gip_count) - dev_base(:,:,t_i);
         gip_count = gip_count+1;
     end
 end    
@@ -434,7 +434,7 @@ if ~isempty(grab_epoch)
 end
 
 %% fix related epoch
-if false
+if all(ismember({'circle_fix_start','triangle_fix_start'},{EEG.event.type}))
     fix_epoch = pop_epoch(EEG,{'fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
     fix_std = pop_epoch(EEG,{'circle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
     fix_dev = pop_epoch(EEG,{'triangle_fix_start'},len_epoch_grab/1000, 'epochinfo', 'yes');
@@ -443,10 +443,28 @@ if false
     behavi_fstd = fix_std.data(nbchan+1:end,:,:);
     behavi_fdev = fix_dev.data(nbchan+1:end,:,:);
     behavi_fblue = fix_blue.data(nbchan+1:end,:,:);
+    % remove baseline
     fix_epoch = pop_rmbase(fix_epoch,[max(len_epoch_grab(1),fix_epoch.times(1)) 0],[]);
-    fix_std = pop_rmbase(fix_std,[max(len_epoch_grab(1),fix_std.times(1)) 0],[]);
-    fix_dev = pop_rmbase(fix_dev,[max(len_epoch_grab(1),fix_dev.times(1)) 0],[]);
+%     fix_std = pop_rmbase(fix_std,[max(len_epoch_grab(1),fix_std.times(1)) 0],[]);
+%     fix_dev = pop_rmbase(fix_dev,[max(len_epoch_grab(1),fix_dev.times(1)) 0],[]);
     fix_blue = pop_rmbase(fix_blue,[max(len_epoch_grab(1),fix_blue.times(1)) 0],[]);
+    % remove baseline
+    std_base = mean(std_epoch.data(:,1:find(std_epoch.times==0,1),:),2);
+    fix_count = 1;
+    for t_i = 1:size(std_epoch.data,3)
+        if ~isnan(t_f_std(t_i))
+            fix_std.data(:,:,fix_count) = fix_std.data(:,:,fix_count) - std_base(:,:,t_i);
+            fix_count = fix_count+1;
+        end
+    end
+    dev_base = mean(dev_epoch.data(:,1:find(dev_epoch.times==0,1),:),2);
+    fix_count = 1;
+    for t_i = 1:size(dev_epoch.data,3)
+        if ~isnan(t_f_dev(t_i))
+            fix_dev.data(:,:,fix_count) = fix_dev.data(:,:,fix_count) - dev_base(:,:,t_i);
+            fix_count = fix_count+1;
+        end
+    end    
     fix_epoch.data(nbchan+1:end,:,:) = behavi_fixAll;
     fix_std.data(nbchan+1:end,:,:) = behavi_fstd;
     fix_dev.data(nbchan+1:end,:,:) = behavi_fdev;

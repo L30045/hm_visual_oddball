@@ -26,7 +26,7 @@ filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
 loadpath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/';
 savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
 
-subj_list = [1,4:6,8:10];
+subj_list = [1,4,6,8:10];
 parfor j = 1:length(subj_list)
     subj_i = subj_list(j);
     EEG_noHm = pop_loadset([filepath,sprintf('s%02d_Inner_resampled_250.set',subj_i)]);

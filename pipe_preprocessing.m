@@ -33,10 +33,10 @@ parfor j = 1:length(subj_list)
         % remove gyro channel
         rmCh_labels = {'GyroX','GyroY','GyroZ'};
         EEG = pop_select(EEG, 'nochannel', rmCh_labels);
-        % resample to 250Hz
-        EEG = pop_resample(EEG,250);
         % band pass
         EEG = pop_eegfiltnew(EEG,1,50);
+        % resample to 250Hz
+        EEG = pop_resample(EEG,250);
         % rereference
         EEG = pop_reref(EEG,{'M1','M2'});
         % Add channel location    
