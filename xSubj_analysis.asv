@@ -773,11 +773,14 @@ is_fix_sitm_tri = cellfun(@(x) ismember('triangle_fix_start',{x.dev_epoch.event.
 is_fix_gip_cir = cellfun(@(x) ismember('circle_fix_start',{x.gip_std.event.type}), epoch_lib(:));
 is_fix_gip_tri = cellfun(@(x) ismember('triangle_fix_start',{x.gip_dev.event.type}), epoch_lib(:));
 % epoch_lib{9} (which is epoch_lib{1,5}) has a fixation cover the whole
-% recording. Because the eye direction data are all zeros.
+% recording.
 
-nb_fix = cellfun(@(x) [length(x.event_time.fixStd_time), length(x.event_time.fixDev_time), length(x.event_time.fixAll_time)], epoch_lib(:), 'uniformoutput',0);
-nb_trial = cellfun(@(x) [size(x.std_epoch.data,3), size(x.dev_epoch.data,3)], epoch_lib(:), 'uniformoutput',0);
-
-
-
+% check eye direction
+eye_data = {1,length(epoch_lib(:))};
+figure
+for i = 1:length(epoch_lib(:))
+    eye_data{i} = epoch_lib{i}.std_epoch.data(end-4:end-2,:,:);
+    plot(reshape(eye_data{i},3)
+    pause()
+end
 
