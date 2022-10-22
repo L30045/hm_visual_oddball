@@ -9,7 +9,7 @@ outer_list = filename_list(:,2);
 inner_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,1),'uniformoutput',0);
 outer_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,2),'uniformoutput',0);
 
-parfor i = 1:size(filename_list,1)
+for i = 1:size(filename_list,1)
     EEG_noHm = pop_loadset([filepath,inner_data{i}]);
     EEG_Hm = pop_loadset([filepath,outer_data{i}]);
     [~, ~, ~, ~, ~, epoch_struct_noHm, ~]...
