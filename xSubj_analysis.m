@@ -536,9 +536,9 @@ plt_e_ad = cell(1,2);
 for e_i = 1:2
     switch e_i
         case 1
-            trial_name = 'DEV';
+            trial_name = 'CIR';
         case 2
-            trial_name = 'STD';
+            trial_name = 'TRI';
     end
     plt_dist_ori{e_i} = cell2mat(cellfun(@(x) double(mean(x,2,'omitnan')),...
         dist_lib(ev_idx(e_i),:,cond_i),'uniformoutput',0));
@@ -559,11 +559,11 @@ h_std = plt_h_ad{1};
 h_dev = plt_h_ad{2};
 e_std = plt_e_ad{1};
 e_dev = plt_e_ad{2};
-shadedErrorBar(plt_t,h_std', shaded_method, 'lineprops',{'b--','DisplayName','DEV (head)','linewidth',3});
+shadedErrorBar(plt_t,h_std', shaded_method, 'lineprops',{'b--','DisplayName','CIR (head)','linewidth',3});
 grid on; hold on;
-shadedErrorBar(plt_t,h_dev', shaded_method, 'lineprops',{'r--','DisplayName','STD (head)','linewidth',3});
-shadedErrorBar(plt_t,e_std', shaded_method, 'lineprops',{'b-','DisplayName','DEV (eye)','linewidth',3});
-shadedErrorBar(plt_t,e_dev', shaded_method, 'lineprops',{'r-','DisplayName','STD (eye)','linewidth',3});
+shadedErrorBar(plt_t,h_dev', shaded_method, 'lineprops',{'r--','DisplayName','TRI (head)','linewidth',3});
+shadedErrorBar(plt_t,e_std', shaded_method, 'lineprops',{'b-','DisplayName','CIR (eye)','linewidth',3});
+shadedErrorBar(plt_t,e_dev', shaded_method, 'lineprops',{'r-','DisplayName','TRI (eye)','linewidth',3});
 xline(0,'k--','linewidth',3,'DisplayName',ev_name);
 title(sprintf('%s lock - %s (%s)',ev_name, trial_name, cond_name));
 set(gca,'fontsize',20)
@@ -583,7 +583,7 @@ switch cond_i
     case 2
         cond_name = 'w/ Head Moving';
 end
-time_thres = 2000; %msec
+time_thres = 1000; %msec
 diff_gip_std = cell2mat(cellfun(@(x) x.event_time.diff_gip_std, epoch_lib(cond_i,:),'uniformoutput',0));
 diff_gip_dev = cell2mat(cellfun(@(x) x.event_time.diff_gip_dev, epoch_lib(cond_i,:),'uniformoutput',0));
 diff_stim_grab = cell2mat(cellfun(@(x) x.event_time.diff_stim_grab, epoch_lib(cond_i,:),'uniformoutput',0)); % grab time - stim time (sec)
@@ -725,9 +725,9 @@ merge_stim_tri = {eeg_emptyset(),eeg_emptyset()};
 merge_gip_cir = {eeg_emptyset(),eeg_emptyset()};
 merge_gip_tri = {eeg_emptyset(),eeg_emptyset()};
 
-for i = 1:size(epoch_lib,2)
+for subj_i = 1:size(epoch_lib,2)
     for cond_i = 1:2
-        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,1});
+        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,subj_i});
         tmp_eeg_1 = pop_select(tmp_epoch.std_epoch,'channel',tarCh);
         tmp_eeg_2 = pop_select(tmp_epoch.dev_epoch,'channel',tarCh);
         tmp_eeg_3 = pop_select(tmp_epoch.gip_std,'channel',tarCh);
@@ -863,5 +863,37 @@ is_fix_gip_tri = cellfun(@(x) ismember('triangle_fix_start',{x.gip_dev.event.typ
 nb_fix = cellfun(@(x) [sum(isnan(x.event_time.fixStd_time)), sum(isnan(x.event_time.fixDev_time))], epoch_lib(:), 'uniformoutput',0);
 nb_trial = cellfun(@(x) [size(x.std_epoch.data,3), size(x.dev_epoch.data,3)], epoch_lib(:), 'uniformoutput',0);
 cellfun(@(x,y) x(1:2)-y, nb_fix, nb_trial)
+
+
+%% check data rank
+tarCh = 'Cz';
+data_rank = zeros(4,14,2);
+nb_trial = zeros(4,14,2);
+ori_nb_trial = zeros(4,14,2);
+
+for i = 1:size(epoch_lib,2)
+    for cond_i = 1:2
+        tmp_epoch = epoch_lib{cond_i,i};
+        ori_nb_trial(1,i,cond_i) = size(tmp_epoch.std_epoch.data,3);
+        ori_nb_trial(2,i,cond_i) = size(tmp_epoch.dev_epoch.data,3);
+        ori_nb_trial(3,i,cond_i) = size(tmp_epoch.gip_std.data,3);
+        ori_nb_trial(4,i,cond_i) = size(tmp_epoch.gip_dev.data,3);
+        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,i});
+        nb_trial(1,i,cond_i) = size(tmp_epoch.std_epoch.data,3);
+        nb_trial(2,i,cond_i) = size(tmp_epoch.dev_epoch.data,3);
+        nb_trial(3,i,cond_i) = size(tmp_epoch.gip_std.data,3);
+        nb_trial(4,i,cond_i) = size(tmp_epoch.gip_dev.data,3);
+        data_rank(1,i,cond_i) = rank(squeeze(tmp_epoch.std_epoch.data(ismember({tmp_epoch.std_epoch.chanlocs.labels},tarCh),:,:)));
+        data_rank(2,i,cond_i) = rank(squeeze(tmp_epoch.dev_epoch.data(ismember({tmp_epoch.dev_epoch.chanlocs.labels},tarCh),:,:)));
+        data_rank(3,i,cond_i) = rank(squeeze(tmp_epoch.gip_std.data(ismember({tmp_epoch.gip_std.chanlocs.labels},tarCh),:,:)));
+        data_rank(4,i,cond_i) = rank(squeeze(tmp_epoch.gip_dev.data(ismember({tmp_epoch.gip_dev.chanlocs.labels},tarCh),:,:)));
+    end
+end
+
+
+
+
+
+
 
 
