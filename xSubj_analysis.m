@@ -399,7 +399,8 @@ for i = 1:nr
 end
 
 %% plot behavior for each condition
-cond_i = 2;
+load('../behav_lib_20221022.mat')
+cond_i = 1;
 ev_name = 'gip';
 
 switch ev_name

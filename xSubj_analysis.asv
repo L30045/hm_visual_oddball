@@ -396,6 +396,7 @@ for i = 1:nr
 end
 
 %% plot behavior for each condition
+load('../behav_lib_20221022.mat')
 cond_i = 2;
 ev_name = 'gip';
 
@@ -725,9 +726,9 @@ for i = 1:size(epoch_lib,2)
     for cond_i = 1:2
         tmp_epoch = my_rmEpoch(epoch_lib{cond_i,1});
         tmp_eeg_1 = pop_select(tmp_epoch.std_epoch,'channel',tarCh);
-        tmp_eeg_2 = pop_select(epoch_lib{cond_i,i}.dev_epoch,'channel',tarCh);
-        tmp_eeg_3 = pop_select(epoch_lib{cond_i,i}.gip_std,'channel',tarCh);
-        tmp_eeg_4 = pop_select(epoch_lib{cond_i,i}.gip_dev,'channel',tarCh);
+        tmp_eeg_2 = pop_select(tmp_epoch.dev_epoch,'channel',tarCh);
+        tmp_eeg_3 = pop_select(tmp_epoch.gip_std,'channel',tarCh);
+        tmp_eeg_4 = pop_select(tmp_epoch.gip_dev,'channel',tarCh);
         if merge_stim_cir{cond_i}.nbchan==0
             merge_stim_cir{cond_i} = tmp_eeg_1;
             merge_stim_tri{cond_i} = tmp_eeg_2;
@@ -743,9 +744,9 @@ for i = 1:size(epoch_lib,2)
 end
     
 %% plot ERPImage
-tarCh = 'POz';
+tarCh = 'Cz';
 lock_name = 'gip';
-ev_name = 'cir';
+ev_name = 'tri';
 cond_name = 'Hm';
 switch cond_name
     case 'noHm'
@@ -781,10 +782,19 @@ smoothing = 10;
 figure; pop_erpimage(plt_EEG,1, [1],[[]],tarCh,smoothing,1,sort_name,[],'latency','yerplabel','\muV','erp','on','cbar','on','topo', { [1] plt_EEG.chanlocs plt_EEG.chaninfo } );
 
 %% plot ERP
+tarCh = 'CPz';
 ev_name = 'gip';
 cond_name = 'Hm';
-plt_EEG1 = merge_gip_cir;
-plt_EEG2 = merge_gip_tri;
+switch cond_name
+    case 'noHm'
+        cond_i = 1;
+    case 'Hm'
+        cond_i = 2;
+end
+eval(sprintf('plt_EEG1 = merge_%s_cir{cond_i};',ev_name));
+eval(sprintf('plt_EEG2 = merge_%s_tri{cond_i};',ev_name));
+plt_EEG1 = pop_select(plt_EEG1,'channel',{tarCh});
+plt_EEG2 = pop_select(plt_EEG2,'channel',{tarCh});
 % plt_EEG1 = pop_eegfiltnew(plt_EEG1,5,20);
 % plt_EEG2 = pop_eegfiltnew(plt_EEG2,5,20);
 plt_EEG1 = pop_autorej(plt_EEG1,'threshold',100,'nogui','on');
@@ -811,7 +821,7 @@ set(gcf,'color',[1 1 1])
 set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
-title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh{1}))
+title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh))
 
 %% 
 ev_name = 'gip';
