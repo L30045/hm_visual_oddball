@@ -22,28 +22,27 @@ for i = 1:length(subj_list)
 %     end
 end
 % savepath = filepath;
-save([savepath,'epoch_lib_20221014_rmPreStim.mat'],'-v7.3','epoch_lib');
+save([savepath,'epoch_lib_rmPreStim.mat'],'-v7.3','epoch_lib');
 disp('Done')
 
 %%
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+filepath = '\\hoarding\yuan\Documents\2021 HM_visual_oddball\dataset\new epoch\';
 savepath = filepath;
-load([savepath,'epoch_lib_20221003.mat'],'epoch_lib');
+load([savepath,'epoch_lib_rmPreStim_with_s05.mat'],'epoch_lib');
 
 %%
-tmp_ch = cellfun(@(x) {x.std_epoch.chanlocs.labels}, epoch_lib(1,:),'uniformoutput',0);
-[~, tmp_idx] = max(cellfun(@length, tmp_ch));
-common_ch = tmp_ch{tmp_idx};
-for ch_i = 1:size(epoch_lib,2)
-    common_ch = intersect(common_ch, tmp_ch{ch_i});
-end
+% tmp_ch = cellfun(@(x) {x.std_epoch.chanlocs.labels}, epoch_lib(1,:),'uniformoutput',0);
+% [~, tmp_idx] = max(cellfun(@length, tmp_ch));
+% common_ch = tmp_ch{tmp_idx};
+% for ch_i = 1:size(epoch_lib,2)
+%     common_ch = intersect(common_ch, tmp_ch{ch_i});
+% end
 
 cond_name = 'noHm';
-ev_name = 'gip';
-tar_Ch = 'Fp1';
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+ev_name = 'fix';
+tar_Ch = 'Cz';
+filepath = '//hoarding/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
 subj_list = {dir([filepath, 'rmPreStim*']).name};
-subj_list = subj_list(2:end);
 % idx_new_resample = cellfun(@(x) ~isempty(regexp(x,'.*resample.*','once')),subj_list);
 % idx_old = cellfun(@(x) isempty(regexp(x,'new','once')),subj_list);
 % subj_list = subj_list(idx_new_resample | idx_old);
@@ -96,13 +95,19 @@ for i = 1:length(subj_list)
             cir_epoch = cond_struct.gip_std;
         case 'fix'
             tri_epoch = cond_struct.fix_dev;
-            cir_epoch = cond_struct.fix_std;
-            
+            cir_epoch = cond_struct.fix_std;     
     end
+    % remove bad trials
     ch_idx = find(ismember({tri_epoch.chanlocs.labels},tar_Ch));
+    tri_epoch_data = pop_select(tri_epoch,'channel',ch_idx);
+    cir_epoch_data = pop_select(cir_epoch,'channel',ch_idx);
+    [tri_epoch_data,rm_idx_tri] = pop_autorej(tri_epoch_data,'threshold',100,'nogui','on');
+    [cir_epoch_data,rm_idx_cir] = pop_autorej(cir_epoch_data,'threshold',100,'nogui','on');
+    tri_epoch = pop_rejepoch(tri_epoch,rm_idx_tri,0);
+    cir_epoch = pop_rejepoch(cir_epoch,rm_idx_cir,0);
     plt_t = tri_epoch.times;
-    tri_lib(i,:) = mean(squeeze(tri_epoch.data(ch_idx,:,:)),2);
-    cir_lib(i,:) = mean(squeeze(cir_epoch.data(ch_idx,:,:)),2);
+    tri_lib(i,:) = mean(tri_epoch_data.data,3);
+    cir_lib(i,:) = mean(cir_epoch_data.data,3);
     eye_lib(i,:) = mean([squeeze(cir_epoch.data(end-2,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2,'omitnan');
     head_lib(i,:) = mean([squeeze(cir_epoch.data(end-3,:,:)),squeeze(tri_epoch.data(end-2,:,:))],2,'omitnan' );
     cir_stack = [cir_stack;squeeze(cir_epoch.data(ch_idx,:,:))'];
@@ -273,7 +278,10 @@ for subj_i = 1:length(subj_list)
         downLoc = epoch_struct.event_time.downLoc;
         leftLoc = epoch_struct.event_time.leftLoc;
         rightLoc = epoch_struct.event_time.rightLoc;
-        tar_lib = [upLoc;downLoc;leftLoc;rightLoc];
+        tar_lib = [reshape(upLoc,1,3);...
+                   reshape(downLoc,1,3);...
+                   reshape(leftLoc,1,3);...
+                   reshape(rightLoc,1,3)];
 %         ev_list = fieldnames(epoch_struct);
         ev_list = {'std_epoch','dev_epoch','gip_std','gip_dev'};
         ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;...
@@ -317,7 +325,7 @@ for subj_i = 1:length(subj_list)
 end
 disp('Done')
 com = 'Dimension: [std_epoch,dev_epoch,gip_std,gip_dev] * subject * condition. Ang_lib cell: [head, eye, gip]';
-% save('behav_lib_v2.mat','ang_lib','angDiff_lib','dist_lib','com');
+save([savepath,'behav_lib_20221022.mat'],'ang_lib','angDiff_lib','dist_lib','com');
 
 
 %% plot behavior for each condition
@@ -631,33 +639,55 @@ nb_gip_dev_cond2 = cellfun(@(x) size(x.gip_dev.data,3), epoch_lib(2,:));
 % disable baseline removal
 
 %% Merge epoch_lib to perform ERPImage using EEGLAB function
-tarCh = {'POz'};
+tmp_ch = cellfun(@(x) {x.std_epoch.chanlocs.labels}, epoch_lib(:),'uniformoutput',0);
+[~, tmp_idx] = max(cellfun(@length, tmp_ch));
+common_ch = tmp_ch{tmp_idx};
+for ch_i = 1:length(epoch_lib(:))
+    common_ch = intersect(common_ch, tmp_ch{ch_i});
+end
+
+% tarCh = {'POz'};
+tarCh = common_ch;
 cond_i = 2;
-merge_stim_cir = eeg_emptyset();
-merge_stim_tri = eeg_emptyset();
-merge_gip_cir = eeg_emptyset();
-merge_gip_tri = eeg_emptyset();
+merge_stim_cir = {eeg_emptyset(),eeg_emptyset()};
+merge_stim_tri = {eeg_emptyset(),eeg_emptyset()};
+merge_gip_cir = {eeg_emptyset(),eeg_emptyset()};
+merge_gip_tri = {eeg_emptyset(),eeg_emptyset()};
 
 for i = 1:size(epoch_lib,2)
-    tmp_eeg_1 = pop_select(epoch_lib{cond_i,i}.std_epoch,'channel',tarCh);
-    tmp_eeg_2 = pop_select(epoch_lib{cond_i,i}.dev_epoch,'channel',tarCh);
-    tmp_eeg_3 = pop_select(epoch_lib{cond_i,i}.gip_std,'channel',tarCh);
-    tmp_eeg_4 = pop_select(epoch_lib{cond_i,i}.gip_dev,'channel',tarCh);
-    if merge_stim_cir.nbchan==0
-        merge_stim_cir = tmp_eeg_1;
-        merge_stim_tri = tmp_eeg_2;
-        merge_gip_cir = tmp_eeg_3;
-        merge_gip_tri = tmp_eeg_4;
-    else
-        merge_stim_cir = pop_mergeset(tmp_eeg_1,merge_stim_cir);
-        merge_stim_tri = pop_mergeset(tmp_eeg_2,merge_stim_tri);
-        merge_gip_cir = pop_mergeset(tmp_eeg_3,merge_gip_cir);
-        merge_gip_tri = pop_mergeset(tmp_eeg_4,merge_gip_tri);
+    for cond_i = 1:2
+        tmp_eeg_1 = pop_select(epoch_lib{cond_i,i}.std_epoch,'channel',tarCh);
+        tmp_eeg_2 = pop_select(epoch_lib{cond_i,i}.dev_epoch,'channel',tarCh);
+        tmp_eeg_3 = pop_select(epoch_lib{cond_i,i}.gip_std,'channel',tarCh);
+        tmp_eeg_4 = pop_select(epoch_lib{cond_i,i}.gip_dev,'channel',tarCh);
+        if merge_stim_cir{cond_i}.nbchan==0
+            merge_stim_cir{cond_i} = tmp_eeg_1;
+            merge_stim_tri{cond_i} = tmp_eeg_2;
+            merge_gip_cir{cond_i} = tmp_eeg_3;
+            merge_gip_tri{cond_i} = tmp_eeg_4;
+        else
+            merge_stim_cir{cond_i} = pop_mergeset(tmp_eeg_1,merge_stim_cir{cond_i});
+            merge_stim_tri{cond_i} = pop_mergeset(tmp_eeg_2,merge_stim_tri{cond_i});
+            merge_gip_cir{cond_i} = pop_mergeset(tmp_eeg_3,merge_gip_cir{cond_i});
+            merge_gip_tri{cond_i} = pop_mergeset(tmp_eeg_4,merge_gip_tri{cond_i});
+        end
     end
 end
     
 %% plot ERPImage
-plt_EEG = merge_stim_cir;
+tarCh = 'POz';
+lock_name = 'gip';
+ev_name = 'cir';
+cond_name = 'Hm';
+switch cond_name
+    case 'noHm'
+        cond_i = 1;
+    case 'Hm'
+        cond_i = 2;
+end
+
+eval(sprintf('plt_EEG=merge_%s_%s{cond_i};',lock_name,ev_name));
+plt_EEG = pop_select(plt_EEG,'channel',{tarCh});
 plt_EEG = pop_autorej(plt_EEG,'threshold',100,'nogui','on');
 idx_cir_1 = cellfun(@(x) ~isempty(regexp(x,'Standard','once')),{plt_EEG.event.type});
 idx_cir_2 = cellfun(@(x) ~isempty(regexp(x,'\(L\)','once')),{plt_EEG.event.type});
@@ -665,14 +695,22 @@ idx_cir = idx_cir_1 | idx_cir_2;
 idx_tri_1 = cellfun(@(x) ~isempty(regexp(x,'Deviant','once')),{plt_EEG.event.type});
 idx_tri_2 = cellfun(@(x) ~isempty(regexp(x,'\(R\)','once')),{plt_EEG.event.type});
 idx_tri = idx_tri_1 | idx_tri_2;
-
-
-% sort_name = {plt_EEG.event(idx_cir).type};
-% sort_name = {plt_EEG.event(idx_tri).type};
-sort_name = {'circle_gip_start'};
-% sort_name = {'triangle_gip_start'};
+switch lock_name
+    case 'stim'
+        if strcmp(ev_name,'cir')
+            sort_name = {'circle_gip_start'};
+        else
+            sort_name = {'triangle_gip_start'};
+        end
+    case 'gip'
+        if strcmp(ev_name,'cir')
+            sort_name = {plt_EEG.event(idx_cir).type};
+        else
+            sort_name = {plt_EEG.event(idx_tri).type};
+        end
+end
 smoothing = 10;
-figure; pop_erpimage(plt_EEG,1, [1],[[]],tarCh{1},smoothing,1,sort_name,[],'latency','yerplabel','\muV','erp','on','cbar','on','topo', { [1] plt_EEG.chanlocs plt_EEG.chaninfo } );
+figure; pop_erpimage(plt_EEG,1, [1],[[]],tarCh,smoothing,1,sort_name,[],'latency','yerplabel','\muV','erp','on','cbar','on','topo', { [1] plt_EEG.chanlocs plt_EEG.chaninfo } );
 
 %% plot ERP
 ev_name = 'gip';
@@ -708,10 +746,10 @@ ylabel('Amplitude (\muV)')
 title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh{1}))
 
 %% 
-ev_name = 'stim';
+ev_name = 'gip';
 cond_name = 'Hm';
-plt_EEG1 = merge_stim_cir;
-plt_EEG2 = merge_stim_tri;
+plt_EEG1 = merge_gip_cir;
+plt_EEG2 = merge_gip_tri;
 plt_EEG1 = pop_autorej(plt_EEG1,'threshold',100,'nogui','on');
 plt_EEG2 = pop_autorej(plt_EEG2,'threshold',100,'nogui','on');
 plt_t = plt_EEG1.times;
@@ -730,3 +768,19 @@ set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
 title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh{1}))
+
+
+%% check if all epoch have fix
+is_fix_stim_cir = cellfun(@(x) ismember('circle_fix_start',{x.std_epoch.event.type}), epoch_lib(:));
+is_fix_sitm_tri = cellfun(@(x) ismember('triangle_fix_start',{x.dev_epoch.event.type}), epoch_lib(:));
+is_fix_gip_cir = cellfun(@(x) ismember('circle_fix_start',{x.gip_std.event.type}), epoch_lib(:));
+is_fix_gip_tri = cellfun(@(x) ismember('triangle_fix_start',{x.gip_dev.event.type}), epoch_lib(:));
+% epoch_lib{9} (which is epoch_lib{1,5}) has a fixation cover the whole
+% recording. Because the eye direction data are all zeros.
+% All other recordings has fixation
+
+nb_fix = cellfun(@(x) [sum(isnan(x.event_time.fixStd_time)), sum(isnan(x.event_time.fixDev_time))], epoch_lib(:), 'uniformoutput',0);
+nb_trial = cellfun(@(x) [size(x.std_epoch.data,3), size(x.dev_epoch.data,3)], epoch_lib(:), 'uniformoutput',0);
+cellfun(@(x,y) x(1:2)-y, nb_fix, nb_trial)
+
+

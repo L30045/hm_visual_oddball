@@ -278,7 +278,10 @@ for subj_i = 1:length(subj_list)
         downLoc = epoch_struct.event_time.downLoc;
         leftLoc = epoch_struct.event_time.leftLoc;
         rightLoc = epoch_struct.event_time.rightLoc;
-        tar_lib = [upLoc;downLoc;leftLoc;rightLoc];
+        tar_lib = [reshape(upLoc,1,3);...
+                   reshape(downLoc,1,3);...
+                   reshape(leftLoc,1,3);...
+                   reshape(rightLoc,1,3)];
 %         ev_list = fieldnames(epoch_struct);
         ev_list = {'std_epoch','dev_epoch','gip_std','gip_dev'};
         ev_direct = {[epoch_struct.event_time.std_up;epoch_struct.event_time.std_down;...
@@ -322,7 +325,7 @@ for subj_i = 1:length(subj_list)
 end
 disp('Done')
 com = 'Dimension: [std_epoch,dev_epoch,gip_std,gip_dev] * subject * condition. Ang_lib cell: [head, eye, gip]';
-% save('behav_lib_v2.mat','ang_lib','angDiff_lib','dist_lib','com');
+save([savepath,'behav_lib_20221022.mat'],'ang_lib','angDiff_lib','dist_lib','com');
 
 
 %% plot behavior for each condition
