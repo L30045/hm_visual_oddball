@@ -108,6 +108,7 @@ for ch_i = 1:length(epoch_lib(:))
 end
 
 % tarCh = {'POz'};
+thres_time = [100, 1000]; %ms
 tarCh = common_ch;
 merge_stim_cir = {eeg_emptyset(),eeg_emptyset()};
 merge_stim_tri = {eeg_emptyset(),eeg_emptyset()};
@@ -116,7 +117,7 @@ merge_gip_tri = {eeg_emptyset(),eeg_emptyset()};
 
 for subj_i = 1:size(epoch_lib,2)
     for cond_i = 1:2
-        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,subj_i});
+        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,subj_i}, thres_time);
         tmp_eeg_1 = pop_select(tmp_epoch.std_epoch,'channel',tarCh);
         tmp_eeg_2 = pop_select(tmp_epoch.dev_epoch,'channel',tarCh);
         tmp_eeg_3 = pop_select(tmp_epoch.gip_std,'channel',tarCh);
@@ -137,7 +138,7 @@ end
     
 %% plot ERPImage
 tarCh = 'Cz';
-lock_name = 'gip';
+lock_name = 'stim';
 ev_name = 'cir';
 cond_name = 'Hm';
 thres_amp = 100;
@@ -217,3 +218,102 @@ set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
 title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh))
+
+%% Single subject analysis
+saveFigPath = 'D:\Research\oddball_fig\';
+if ~exist(saveFigPath,'dir')
+    mkdir(saveFigPath)
+end
+tarCh = {'Cz','CPz','POz','O2'};
+rm_thres = 30;
+filepath = '//hoarding/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+subj_list = {dir([filepath, 'rmPreStim*']).name};
+
+
+for subj_i = 1:size(epoch_lib,2)
+    subj_savepath = sprintf('%s%s/',saveFigPath,subj_list{subj_i}(1:end-4));
+    if ~exist(subj_savepath,'dir')
+        mkdir(subj_savepath)
+    end
+    for cond_i = 1:2
+        switch cond_i
+            case 1
+                cond_savepath = sprintf('%snoHm/',subj_savepath);
+                cond_name = 'noHm';
+            case 2
+                cond_savepath = sprintf('%sHm/',subj_savepath);
+                cond_name = 'Hm';
+        end
+        if ~exist(cond_savepath,'dir')
+            mkdir(cond_savepath)
+        end 
+        % get data
+        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,subj_i});
+        std_epoch = tmp_epoch.std_epoch;
+        dev_epoch = tmp_epoch.dev_epoch;
+        gip_std = tmp_epoch.gip_std;
+        gip_dev= tmp_epoch.gip_dev;
+        
+        for ch_i = 1:length(tarCh)
+            ch_savepath = sprintf('%s%s/',cond_savepath,tarCh{ch_i});
+            if ~exist(ch_savepath,'dir')
+                mkdir(ch_savepath)
+            end 
+            %=================
+            % remove trial with bad baseline
+            [rm_idx_stim, rm_idx_gip] = my_rmbase(std_epoch, gip_std, tmp_epoch.event_time.gipStd_time,...
+                                                  tarCh{ch_i}, rm_thres);
+            std_epoch = pop_rejepoch(std_epoch,rm_idx_stim,0);
+            gip_std = pop_rejepoch(gip_std,rm_idx_gip,0);
+            [rm_idx_stim, rm_idx_gip] = my_rmbase(dev_epoch, gip_dev, tmp_epoch.event_time.gipDev_time,...
+                                                  tarCh{ch_i}, rm_thres);
+            dev_epoch = pop_rejepoch(dev_epoch,rm_idx_stim,0);
+            gip_dev = pop_rejepoch(gip_dev,rm_idx_gip,0);
+            %=================
+%             % plot ERP
+%             % stim lock
+%             shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+%             fig = plt_erp(std_epoch,dev_epoch,tarCh{ch_i},'stim',shaded_method);
+%             saveas(fig, sprintf('%serp_%s_stim_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+%             close(fig)
+%             % GIP lock
+%             shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+%             fig = plt_erp(gip_std,gip_dev,tarCh{ch_i},'gip',shaded_method);
+%             saveas(fig, sprintf('%serp_%s_gip_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+%             close(fig)
+%             %=================
+%             % plot ERSP
+%             % stim lock, circle trial
+%             smoothing = 1;
+%             fig = plt_ersp(std_epoch,tarCh{ch_i},'stim','cir',smoothing);
+%             saveas(fig, sprintf('%sersp_%s_stim_cir_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+%             close(fig)
+%             % stim lock, triangle trial
+%             fig = plt_ersp(dev_epoch,tarCh{ch_i},'stim','tri',smoothing);
+%             saveas(fig, sprintf('%sersp_%s_stim_tri_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+%             close(fig)
+%             % gip lock, circle trial
+%             fig = plt_ersp(gip_std,tarCh{ch_i},'gip','cir',smoothing);
+%             saveas(fig, sprintf('%sersp_%s_gip_cir_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+%             close(fig)
+%             % gip lock, triangle trial
+%             fig = plt_ersp(gip_dev,tarCh{ch_i},'gip','tri',smoothing);
+%             saveas(fig, sprintf('%sersp_%s_gip_tri_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+%             close(fig)
+            %=================
+            % plot ERP diff
+            % stim lock
+            fig = plt_erp_diff(std_epoch,dev_epoch,tarCh{ch_i},'stim');
+            saveas(fig, sprintf('%serpDiff_%s_stim_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            % GIP lock
+            fig = plt_erp_diff(gip_std,gip_dev,tarCh{ch_i},'gip');
+            saveas(fig, sprintf('%serpDiff_%s_gip_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+        end
+    end
+end
+            
+            
+    
+    

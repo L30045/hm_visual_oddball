@@ -1,12 +1,33 @@
-function output = my_rmEpoch(epoch_struct, thres_time)
+function output = my_rmEpoch(epoch_struct)
 %% remove trial with too short/long GIP time
 output = epoch_struct;
 diff_gip_std = epoch_struct.event_time.diff_gip_std;
 diff_gip_dev = epoch_struct.event_time.diff_gip_dev;
-rm_idx_std = diff_gip_std<thres_time(1) |diff_gip_std>thres_time(2);
-rm_idx_dev = diff_gip_dev<thres_time(1) |diff_gip_dev>thres_time(2);
+rm_idx_std = diff_gip_std<100 |diff_gip_std>1000;
+rm_idx_dev = diff_gip_dev<100 |diff_gip_dev>1000;
 output.event_time.diff_gip_std = diff_gip_std(~rm_idx_std);
 output.event_time.diff_gip_dev = diff_gip_dev(~rm_idx_dev);
+
+%% remove trial with noisy baseline
+std_base = mean(epoch_struct.std_epoch.data(:,1:find(epoch_struct.std_epoch.times==0,1),:),2);
+gip_count = 1;
+for t_i = 1:size(std_epoch.data,3)
+    std_epoch.data(:,:,t_i) = std_epoch.data(:,:,t_i) - std_base(:,:,t_i);
+    if ~isnan(gipStd_time(t_i))
+        gip_std.data(:,:,gip_count) = gip_std.data(:,:,gip_count) - std_base(:,:,t_i);
+        gip_count = gip_count+1;
+    end
+end
+dev_base = mean(dev_epoch.data(:,1:find(dev_epoch.times==0,1),:),2);
+gip_count = 1;
+for t_i = 1:size(dev_epoch.data,3)
+    dev_epoch.data(:,:,t_i) = dev_epoch.data(:,:,t_i) - dev_base(:,:,t_i);
+    if ~isnan(gipDev_time(t_i))
+        gip_dev.data(:,:,gip_count) = gip_dev.data(:,:,gip_count) - dev_base(:,:,t_i);
+        gip_count = gip_count+1;
+    end
+end   
+
 
 %% remove EEG trial
 output.std_epoch = pop_rejepoch(epoch_struct.std_epoch,rm_idx_std,0);
