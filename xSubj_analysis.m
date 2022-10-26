@@ -41,6 +41,8 @@ load([savepath,'epoch_lib_rmPreStim_with_s05.mat'],'epoch_lib');
 cond_name = 'Hm';
 ev_name = 'gip';
 tar_Ch = 'Cz';
+thres_time = [100 1000];
+rm_thres = 100;
 filepath = '//hoarding/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
 subj_list = {dir([filepath, 'rmPreStim*']).name};
 % idx_new_resample = cellfun(@(x) ~isempty(regexp(x,'.*resample.*','once')),subj_list);
@@ -86,7 +88,20 @@ for i = 1:length(subj_list)
         case 'Hm'
             cond_struct = epoch_lib{2,i};
     end
-    cond_struct = my_rmEpoch(cond_struct);
+    % remove trials by GIP latency
+    cond_struct = my_rmEpoch(cond_struct,thres_time);
+    [rm_idx_stim_std, rm_idx_gip_std] = my_rmbase(cond_struct.std_epoch, cond_struct.gip_std, cond_struct.event_time.gipStd_time, tar_Ch, rm_thres);
+    [rm_idx_stim_dev, rm_idx_gip_dev] = my_rmbase(cond_struct.dev_epoch, cond_struct.gip_dev, cond_struct.event_time.gipDev_time, tar_Ch, rm_thres);
+    [~, rm_idx_fix_std] = my_rmbase(cond_struct.std_epoch, cond_struct.fix_std, cond_struct.event_time.fixStd_time, tar_Ch, rm_thres);
+    [~, rm_idx_fix_dev] = my_rmbase(cond_struct.dev_epoch, cond_struct.fix_dev, cond_struct.event_time.fixDev_time, tar_Ch, rm_thres);
+    % remove from epoch struct
+    cond_struct.std_epoch = pop_rejepoch(cond_struct.std_epoch,rm_idx_stim_std,0);
+    cond_struct.dev_epoch = pop_rejepoch(cond_struct.dev_epoch,rm_idx_stim_dev,0);
+    cond_struct.gip_std = pop_rejepoch(cond_struct.gip_std,rm_idx_gip_std,0);
+    cond_struct.gip_dev = pop_rejepoch(cond_struct.gip_dev,rm_idx_gip_dev,0);
+    cond_struct.fix_std = pop_rejepoch(cond_struct.fix_std,rm_idx_fix_std,0);
+    cond_struct.fix_dev = pop_rejepoch(cond_struct.fix_dev,rm_idx_fix_dev,0);
+    
     switch ev_name
         case 'stim'
             tri_epoch = cond_struct.dev_epoch;
@@ -100,12 +115,12 @@ for i = 1:length(subj_list)
     end
     % remove bad trials
     ch_idx = find(ismember({tri_epoch.chanlocs.labels},tar_Ch));
-    tri_epoch_data = pop_select(tri_epoch,'channel',ch_idx);
-    cir_epoch_data = pop_select(cir_epoch,'channel',ch_idx);
-    [tri_epoch_data,rm_idx_tri] = pop_autorej(tri_epoch_data,'threshold',100,'nogui','on');
-    [cir_epoch_data,rm_idx_cir] = pop_autorej(cir_epoch_data,'threshold',100,'nogui','on');
-    tri_epoch = pop_rejepoch(tri_epoch,rm_idx_tri,0);
-    cir_epoch = pop_rejepoch(cir_epoch,rm_idx_cir,0);
+%     tri_epoch_data = pop_select(tri_epoch,'channel',ch_idx);
+%     cir_epoch_data = pop_select(cir_epoch,'channel',ch_idx);
+%     [tri_epoch_data,rm_idx_tri] = pop_autorej(tri_epoch_data,'threshold',100,'nogui','on');
+%     [cir_epoch_data,rm_idx_cir] = pop_autorej(cir_epoch_data,'threshold',100,'nogui','on');
+%     tri_epoch = pop_rejepoch(tri_epoch,rm_idx_tri,0);
+%     cir_epoch = pop_rejepoch(cir_epoch,rm_idx_cir,0);
     plt_t = tri_epoch.times;
     tri_lib(i,:) = mean(tri_epoch_data.data,3);
     cir_lib(i,:) = mean(cir_epoch_data.data,3);
@@ -326,7 +341,7 @@ for subj_i = 9:length(subj_list)
 end
 disp('Done')
 com = 'Dimension: [std_epoch,dev_epoch,gip_std,gip_dev] * subject * condition. Ang_lib cell: [head, eye, gip]';
-save([savepath,'behav_lib_20221022.mat'],'ang_lib','angDiff_lib','dist_lib','com');
+% save([savepath,'behav_lib_20221022.mat'],'ang_lib','angDiff_lib','dist_lib','com');
 
 %% plot behavior for a single recording
 e_i = 2;
