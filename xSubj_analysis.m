@@ -905,6 +905,7 @@ for i = 1:size(epoch_lib,2)
     end
 end
 
+%% add direction as a variable and see how it affects behaviors and EEG
 
 
 

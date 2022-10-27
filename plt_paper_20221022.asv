@@ -366,7 +366,7 @@ end
 fix_subj_idx = sum(fix_subj_idx,1)==2;
 grab_subj_idx = sum(grab_subj_idx,1)==2;
 select_idx = fix_subj_idx & grab_subj_idx;
-cond_i = 2;
+cond_i = 1;
 thres_time = [100 1500];
 grab_time = cellfun(@(x) x.event_time.grab_time, epoch_lib(cond_i,select_idx),'uniformoutput',0);
 stim_time = cellfun(@(x) x.event_time.std_time, epoch_lib(cond_i,select_idx),'uniformoutput',0);
@@ -406,44 +406,30 @@ end
 
 % grab to stim
 diff_grab_stim = cell2mat(diff_grab_stim);
-diff_grab_stim = diff_grab_stim(diff_grab_stim>100 & diff_grab_stim<1000);
+diff_grab_stim = diff_grab_stim(select_idx);
 % grab to gip
 diff_grab_gip = cell2mat(diff_grab_gip);
+select_idx = diff_grab_stim>-1000 & diff_grab_stim<1000;
+diff_grab_gip = diff_grab_gip(select_idx);
 % grab to fix
 diff_grab_fix = cell2mat(diff_grab_fix);
+diff_grab_fix = diff_grab_fix(select_idx);
 % fix to gip
 diff_fix_gip = cell2mat(cellfun(@(x,y) x-y, fix_time, gip_time, 'uniformoutput',0));
-
-select_idx = diff_grab_gip>-1000 & diff_grab_gip<1000;
-select_idx = select_idx & diff_fix_gip>-1000 & diff_fix_gip<1000;
-diff_grab_gip = diff_grab_gip(select_idx);
-diff_grab_fix = diff_grab_fix(select_idx);
-diff_fix_gip = diff_fix_gip(select_idx);
+diff_fix_gip = diff_fix_gip(diff_fix_gip>-1000 & diff_fix_gip<1000);
 
 % hist
 plt_diff1 = diff_grab_gip;
 plt_diff2 = diff_grab_fix;
 plt_diff3 = diff_fix_gip;
 figure
-ax1 = subplot(3,1,1);
-grid on
-hold on
+subplot()
 hs = histogram(plt_diff1,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-GIP (med.=%dms)',round(median(plt_diff1))),...
             'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
-legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-set(gca,'fontsize',20)
-ylabel('Probability')
-ax2 = subplot(3,1,2);
-grid on
 hold on
+grid on
 hs = histogram(plt_diff2,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-Fix (med.=%dms)',round(median(plt_diff2))),...
             'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
-legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-set(gca,'fontsize',20)
-ylabel('Probability')
-ax3 = subplot(3,1,3);
-grid on
-hold on
 hs = histogram(plt_diff3,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (med.=%dms)',round(median(plt_diff3))),...
             'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
         
@@ -454,7 +440,6 @@ set(gca,'fontsize',20)
 %         title(sprintf('%s latency %s',lock_name{:},cond_name{:}))
 set(gca,'fontsize',20)
 set(gcf,'color','w')
-linkaxes([ax1,ax2,ax3],'x')
 
 % plot
 % [~, sort_idx] = sort(diff_grab_gip);

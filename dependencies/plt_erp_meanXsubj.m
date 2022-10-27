@@ -74,7 +74,7 @@ end
 
 % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
-fig = figure('units','normalized','outerposition',[0 0 1 1]);
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
 % >> Triangle
 if ~isempty(tri_epoch)
     ht = shadedErrorBar(plt_t, tri_lib, shaded_method,'lineprops',...
@@ -87,14 +87,14 @@ hold on
 hc = shadedErrorBar(plt_t, cir_lib, shaded_method,'lineprops',...
     {'color','r','linewidth',3,'DisplayName','Deviant'});
 hc.patch.FaceAlpha = 0.1;
-xline(0,'k-','DisplayName',ev_name,'linewidth',3)
+xline(0,'k-','DisplayName',sprintf('%s onset',ev_name),'linewidth',3)
 legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
 set(gca,'fontsize',30)
 set(gcf,'color',[1 1 1])
 set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
-title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh))
+% title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh))
 
 
 end
