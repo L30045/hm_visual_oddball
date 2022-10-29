@@ -1,0 +1,51 @@
+function ev_time = find_ev_time(epoch_struct)
+ev_time = struct('diff_gip_stim',[],'diff_grab_stim',[],'diff_fix_stim',[]);
+
+% std
+for lock_i = 1:2
+    switch lock_i
+        case 1
+            EEG = epoch_struct.std_epoch;
+            gip_marker = 'circle_gip_start';
+            fix_marker = 'circle_fix_start';
+        case 2
+            EEG = epoch_struct.dev_epoch;
+            gip_marker = 'triangle_gip_start';
+            fix_marker = 'triangle_fix_start';
+    end
+    
+    gip_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,gip_marker),x),1), {EEG.epoch.eventtype});
+    fix_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,fix_marker),x),1), {EEG.epoch.eventtype});   
+    gip_t = zeros(1,length(gip_idx));
+    fix_t = zeros(1,length(gip_idx));
+    % remove missing event
+    rm_idx = isempty(gip_idx)|isempty(fix_idx);
+    if lock_i == 1
+        grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'grab'),x),1), {EEG.epoch.eventtype});
+        grab_t = zeros(1,length(gip_idx));
+        rm_idx = rm_idx|isempty(grab_idx);
+        grab_idx = grab_idx(~rm_idx);
+    end
+    gip_idx = gip_idx(~rm_idx);
+    fix_idx = fix_idx(~rm_idx);
+
+    for ev_i = 1:length(gip_idx)
+        gip_t(ev_i) = EEG.epoch(ev_i).eventlatency{gip_idx(ev_i)}; % ms
+        fix_t(ev_i) = EEG.epoch(ev_i).eventlatency{fix_idx(ev_i)}; % ms
+        if lock_i == 1
+            grab_t(ev_i) = EEG.epoch(ev_i).eventlatency{gip_idx(ev_i)}; % ms
+        end
+    end
+    
+
+
+
+
+
+
+
+
+
+
+
+end

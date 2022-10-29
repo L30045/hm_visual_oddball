@@ -1100,83 +1100,85 @@ set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
 %% investigate grab timing for each direction
 savepath = 'D:\Research\oddball_fig\xSubj\event latency\';
 dir_name = {'up','down','left','right'};
-for d_i = 1:4
-    plt_lib = merge_dir_lib{d_i};
+for 
+plt_lib = merge_dir_lib{1};
 
-    % std
-    for cond_i = 1:2
-        switch cond_i
-            case 1
-                cond_name = 'noHm';
-            case 2
-                cond_name = 'Hm';
-        end
-        output = find_ev_time(plt_lib{cond_i});
-        fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
-        plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
-        plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
-        plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+% std
+for cond_i = 1:2
+    switch cond_i
+        case 1
+            cond_name = 'noHm';
+        case 2
+            cond_name = 'Hm';
+    end
+    output = find_ev_time(plt_lib{cond_i});
+    fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+    plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
+    plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
+    plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+    
+    
+    ax1 = subplot(3,1,1);
+    title(sprintf('%s',cond_name))
+    grid on
+    hold on
+    hs = histogram(plt_diff1,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-GIP (med.=%dms)',round(median(plt_diff1))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+    ax2 = subplot(3,1,2);
+    grid on
+    hold on
+    hs = histogram(plt_diff2,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-Fix (med.=%dms)',round(median(plt_diff2))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+    ax3 = subplot(3,1,3);
+    grid on
+    hold on
+    hs = histogram(plt_diff3,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (med.=%dms)',round(median(plt_diff3))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
 
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+    xlabel('latency (ms)')
+    ylabel('Probability')
+    set(gca,'fontsize',20)
+    set(gca,'fontsize',20)
+    set(gcf,'color','w')
+    linkaxes([ax1,ax2,ax3],'x')
+    
+    saveas(fig, sprintf('%sevent_latency_%s_%s_cir.png',savepath,cond_name,dir_name));
+    close(fig)
+end    
+    
+% dev
+for cond_i = 1:2
+    switch cond_i
+        case 1
+            cond_name = 'noHm';
+        case 2
+            cond_name = 'Hm';
+    end
+    output = find_ev_time(plt_lib{cond_i});
+    fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+    plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+    hs = histogram(plt_diff3,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (med.=%dms)',round(median(plt_diff3))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
+    grid on
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+    xlabel('latency (ms)')
+    ylabel('Probability')
+    set(gca,'fontsize',20)
+    title(sprintf('%s',cond_name))
+    set(gca,'fontsize',20)
+    set(gcf,'color','w')
+    linkaxes([ax1,ax2,ax3],'x')
+    
+    saveas(fig, sprintf('%sevent_latency_%s_%s_tri.png',savepath,cond_name,dir_name));
+    close(fig)
+end    
+    
 
-        ax1 = subplot(3,1,1);
-        title(sprintf('%s',cond_name))
-        grid on
-        hold on
-        hs = histogram(plt_diff1,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-GIP (med.=%dms)',round(median(plt_diff1))),...
-                    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
-        legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-        set(gca,'fontsize',20)
-        ylabel('Probability')
-        ax2 = subplot(3,1,2);
-        grid on
-        hold on
-        hs = histogram(plt_diff2,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-Fix (med.=%dms)',round(median(plt_diff2))),...
-                    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
-        legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-        set(gca,'fontsize',20)
-        ylabel('Probability')
-        ax3 = subplot(3,1,3);
-        grid on
-        hold on
-        hs = histogram(plt_diff3,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (med.=%dms)',round(median(plt_diff3))),...
-                    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
-
-        legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-        xlabel('latency (ms)')
-        ylabel('Probability')
-        set(gca,'fontsize',20)
-        set(gca,'fontsize',20)
-        set(gcf,'color','w')
-        linkaxes([ax1,ax2,ax3],'x')
-
-        saveas(fig, sprintf('%sevent_latency_%s_%s_cir.png',savepath,cond_name,dir_name{d_i}));
-        close(fig)
-    end    
-
-    % dev
-    for cond_i = 1:2
-        switch cond_i
-            case 1
-                cond_name = 'noHm';
-            case 2
-                cond_name = 'Hm';
-        end
-        output = find_ev_time(plt_lib{cond_i});
-        fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
-        plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
-        hs = histogram(plt_diff3,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (med.=%dms)',round(median(plt_diff3))),...
-                    'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
-        grid on
-        legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-        xlabel('latency (ms)')
-        ylabel('Probability')
-        set(gca,'fontsize',20)
-        title(sprintf('%s',cond_name))
-        set(gca,'fontsize',20)
-        set(gcf,'color','w')
-        saveas(fig, sprintf('%sevent_latency_%s_%s_tri.png',savepath,cond_name,dir_name{d_i}));
-        close(fig)
-    end    
-
-end
 
