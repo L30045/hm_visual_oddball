@@ -72,7 +72,7 @@ for subj_i = 1:size(epoch_lib,2)
             [~, rm_idx_fix_dev] = my_rmbase(dev_epoch, fix_dev, tmp_epoch.event_time.fixDev_time, 'Cz', rm_thres);
             fix_std = pop_rejepoch(fix_std,rm_idx_fix_std,0);
             fix_dev = pop_rejepoch(fix_dev,rm_idx_fix_dev,0);
-            output{cond_i}.event_time.fixStd_time = [output{cond_i}.event_time.fixStd_time, tmp_epoch.event_time.fixStd_time(~rm_idx_fix_std)];
+            output{cond_i}.event_time.fixStd_time = [output{cond_i}.event_time.fixStd_time, tmp_epoch.event_time.fixStd_time(~rm_idx_fix_)];
             output{cond_i}.event_time.fixDev_time = [output{cond_i}.event_time.fixDev_time, tmp_epoch.event_time.fixDev_time(~rm_idx_fix_dev)];
             output{cond_i}.event_time.fixBlue_time = [output{cond_i}.event_time.fixBlue_time, tmp_epoch.event_time.fixBlue_time];
             if isempty(output{cond_i}.fix_epoch)

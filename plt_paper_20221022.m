@@ -15,6 +15,9 @@ nb_subj = size(epoch_lib,2);
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 % shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
 savepath = 'D:\Research\oddball_fig\xSubj\mean ERP\';
+
+subplot_lib = cell(1,6);
+count = 1;
 for cond_name = {'noHm','Hm'}
     for ev_name = {'stim','gip','fix'}
         for tarCh = {'Cz'}
@@ -23,7 +26,7 @@ for cond_name = {'noHm','Hm'}
             if ~exist(loc_path,'dir')
                 mkdir(loc_path)
             end
-            fig = plt_erp_meanXsubj(epoch_lib, cond_name{:}, ev_name{:}, tarCh{:}, thres_time, rm_thres,shaded_method);
+            [fig,plt_t,cir_lib,tri_lib] = plt_erp_meanXsubj(epoch_lib, cond_name{:}, ev_name{:}, tarCh{:}, thres_time, rm_thres,shaded_method);
             % for printing PDF
             set(gca,'units','centimeters')
             pos = get(gca,'Position');
@@ -33,11 +36,50 @@ for cond_name = {'noHm','Hm'}
             set(gcf, 'PaperPositionMode', 'manual');
             set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
 %             saveas(fig, sprintf('%serp_%s_%s_%s.png',loc_path,cond_name{:},ev_name{:},tarCh{:}));
-            saveas(fig, sprintf('%serp_%s_%s_%s.pdf',loc_path,cond_name{:},ev_name{:},tarCh{:}));
+%             saveas(fig, sprintf('%serp_%s_%s_%s.pdf',loc_path,cond_name{:},ev_name{:},tarCh{:}));
             close(fig)
+            subplot_lib{count} = {plt_t, cir_lib, tri_lib};
+            count = count+1;
         end
     end
 end
+
+%% plot above figures in one big subplot
+plt_lib = reshape(reshape(subplot_lib,3,2)',[],1); % for 3 by 2 subplot
+% plt_lib = subplot_lib; % for 2 by 3 subplot
+ev_name = {'stim','stim','gip','gip','fix','fix'};
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+for p_i = 1:6
+    subplot(3,2,p_i)
+    plt_t = plt_lib{p_i}{1};
+    cir_lib = plt_lib{p_i}{2};
+    tri_lib = plt_lib{p_i}{3};
+    
+    ht = shadedErrorBar(plt_t, tri_lib, shaded_method,'lineprops',...
+        {'color','b','linewidth',3,'DisplayName','Standard'});
+    ht.patch.FaceAlpha = 0.1;
+    grid on
+    hold on
+    % >> Circle
+    hc = shadedErrorBar(plt_t, cir_lib, shaded_method,'lineprops',...
+        {'color','r','linewidth',3,'DisplayName','Deviant'});
+    hc.patch.FaceAlpha = 0.1;
+    xline(0,'k-','DisplayName',sprintf('%s onset',ev_name{p_i}),'linewidth',3)
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
+    set(gca,'fontsize',15)
+    set(gcf,'color',[1 1 1])
+    set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
+    xlabel('Time (ms)')
+    ylabel('Amplitude (\muV)')
+end
+
+fig.Units = 'centimeters';
+fig.PaperUnits = 'centimeters';
+fig.PaperSize = fig.Position(3:4);
+savespath = 'D:\Research\oddball_fig\xSubj\mean ERP\';
+saveas(fig, sprintf('%smeanERP_Cz.png',savepath));
+saveas(fig, sprintf('%smeanERP_Cz.pdf',savepath));
+
 
 %% calculate behavior
 behav_lib = cell(size(epoch_lib));
@@ -54,6 +96,9 @@ rm_edge = round(100*0.001*epoch_lib{1}.std_epoch.srate); % sample points
 % savepath = 'D:\Research\oddball_fig\xSubj\behav\';
 savepath = 'C:\Users\Yuan\OneDrive\Desktop\graduate!\fig\vr\';
 
+ang_lib = cell(1,6);
+v_ang_lib = cell(1,6);
+count = 1;
 for cond_name_loop = {'noHm','Hm'}
     for lock_name_loop = {'stim','gip','fix'}
         for ev_name_loop = {'dev'}
@@ -121,65 +166,104 @@ for cond_name_loop = {'noHm','Hm'}
             my_norm = @(x)((x-min(x,[],1))./(max(x,[],1)-min(x,[],1)));
 
             % angle 
-            fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+%             fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
             plt_dist = my_norm(plt_dist_ori);
             scale = max(mean(plt_e_a,2,'omitnan'));
             plt_dist = plt_dist * scale;
-            shadedErrorBar(plt_t,plt_e_a', shaded_method, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
-            grid on; hold on;
-            shadedErrorBar(plt_t,plt_h_a', shaded_method, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
-            shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
-            shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
-            xline(0,'k--','linewidth',3,'DisplayName',sprintf('%s onset',lock_name));
-%             title(sprintf('%s lock - %s (%s)',lock_name, trial_name, cond_name));
-            set(gca,'fontsize',20)
-            set(gcf,'color','w')
-            xlabel('Time (ms)')
-            ylabel('Angle (deg)')
-            legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-            % for printing PDF
-            set(gca,'units','centimeters')
-            pos = get(gca,'Position');
-            ti = get(gca,'TightInset');
-            set(gcf, 'PaperUnits','centimeters');
-            set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-            set(gcf, 'PaperPositionMode', 'manual');
-            set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-%             saveas(fig,sprintf('%s%s_%s_%s_ang.png',savepath,cond_name,lock_name,ev_name));
-            saveas(fig,sprintf('%s%s_%s_%s_ang.pdf',savepath,cond_name,lock_name,ev_name));
-            close(fig)
-
-            % angle speed
-            fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+%             shadedErrorBar(plt_t,plt_e_a', shaded_method, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
+%             grid on; hold on;
+%             shadedErrorBar(plt_t,plt_h_a', shaded_method, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
+%             shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
+%             shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+%             xline(0,'k--','linewidth',3,'DisplayName',sprintf('%s onset',lock_name));
+% %             title(sprintf('%s lock - %s (%s)',lock_name, trial_name, cond_name));
+%             set(gca,'fontsize',20)
+%             set(gcf,'color','w')
+%             xlabel('Time (ms)')
+%             ylabel('Angle (deg)')
+%             legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+%             % for printing PDF
+%             set(gca,'units','centimeters')
+%             pos = get(gca,'Position');
+%             ti = get(gca,'TightInset');
+%             set(gcf, 'PaperUnits','centimeters');
+%             set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+%             set(gcf, 'PaperPositionMode', 'manual');
+%             set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+% %             saveas(fig,sprintf('%s%s_%s_%s_ang.png',savepath,cond_name,lock_name,ev_name));
+%             saveas(fig,sprintf('%s%s_%s_%s_ang.pdf',savepath,cond_name,lock_name,ev_name));
+%             close(fig)
+            ang_lib{count} = {plt_t,plt_h_a,plt_e_a,plt_g_a,plt_dist};
+%             % angle speed
+%             fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
             plt_dist = my_norm(plt_dist_ori);
             scale = max(mean(plt_e_ad,2,'omitnan'));
             plt_dist = plt_dist * scale;
-            shadedErrorBar(plt_t,plt_e_ad', shaded_method, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
-            grid on; hold on;
-            shadedErrorBar(plt_t,plt_h_ad', shaded_method, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
-            shadedErrorBar(plt_t,plt_g_ad', shaded_method, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
-            shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
-            xline(0,'k--','linewidth',3,'DisplayName',sprintf('%s onset',lock_name));
-%             title(sprintf('%s lock - %s (%s)',lock_name, trial_name, cond_name));
-            set(gca,'fontsize',20)
-            set(gcf,'color','w')
-            xlabel('Time (ms)')
-            ylabel('Angular Speed (deg/sec)')
-            legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
-            % for printing PDF
-            set(gca,'units','centimeters')
-            pos = get(gca,'Position');
-            ti = get(gca,'TightInset');
-            set(gcf, 'PaperUnits','centimeters');
-            set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-            set(gcf, 'PaperPositionMode', 'manual');
-            set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-%             saveas(fig,sprintf('%s%s_%s_%s_vang.png',savepath,cond_name,lock_name,ev_name));
-            saveas(fig,sprintf('%s%s_%s_%s_vang.pdf',savepath,cond_name,lock_name,ev_name));
-            close(fig)
+%             shadedErrorBar(plt_t,plt_e_ad', shaded_method, 'lineprops',{'b-','DisplayName','EyeAng','linewidth',3});
+%             grid on; hold on;
+%             shadedErrorBar(plt_t,plt_h_ad', shaded_method, 'lineprops',{'r-','DisplayName','HeadAng','linewidth',3})
+%             shadedErrorBar(plt_t,plt_g_ad', shaded_method, 'lineprops',{'k-','DisplayName','GIPAng','linewidth',3})
+%             shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','dist2box','linewidth',3})
+%             xline(0,'k--','linewidth',3,'DisplayName',sprintf('%s onset',lock_name));
+% %             title(sprintf('%s lock - %s (%s)',lock_name, trial_name, cond_name));
+%             set(gca,'fontsize',20)
+%             set(gcf,'color','w')
+%             xlabel('Time (ms)')
+%             ylabel('Angular Speed (deg/sec)')
+%             legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
+%             % for printing PDF
+%             set(gca,'units','centimeters')
+%             pos = get(gca,'Position');
+%             ti = get(gca,'TightInset');
+%             set(gcf, 'PaperUnits','centimeters');
+%             set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+%             set(gcf, 'PaperPositionMode', 'manual');
+%             set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+% %             saveas(fig,sprintf('%s%s_%s_%s_vang.png',savepath,cond_name,lock_name,ev_name));
+%             saveas(fig,sprintf('%s%s_%s_%s_vang.pdf',savepath,cond_name,lock_name,ev_name));
+%             close(fig)
+            v_ang_lib{count} = {plt_t,plt_h_ad,plt_e_ad,plt_g_ad,plt_dist};
+            count=count+1;
         end
     end
 end
+
+%% plot above figure into a big subplot
+ylabel_name = 'Angular Velocity (deg/s)';
+plt_lib = reshape(reshape(v_ang_lib,3,2)',[],1); % for 3 by 2 subplot
+% plt_lib = subplot_lib; % for 2 by 3 subplot
+ev_name = {'stim','stim','gip','gip','fix','fix'};
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+for p_i = 1:6
+    subplot(3,2,p_i)
+    plt_t = plt_lib{p_i}{1};
+    plt_h_a = plt_lib{p_i}{2};
+    plt_e_a = plt_lib{p_i}{3};
+    plt_g_a = plt_lib{p_i}{4};
+    plt_dist = plt_lib{p_i}{5};
+    
+    shadedErrorBar(plt_t,plt_e_a', shaded_method, 'lineprops',{'b-','DisplayName','Eye','linewidth',3});
+    grid on; hold on;
+    shadedErrorBar(plt_t,plt_h_a', shaded_method, 'lineprops',{'r-','DisplayName','Head','linewidth',3})
+    shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','GIP','linewidth',3})
+    shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','Dist.','linewidth',3})
+    xline(0,'k--','linewidth',3,'DisplayName',sprintf('%s onset',ev_name{p_i}));
+    set(gca,'fontsize',20)
+    set(gcf,'color','w')
+    xlabel('Time (ms)')
+    if p_i == 3 || p_i==4
+        ylabel(ylabel_name)
+    end
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'));    
+end
+
+fig.Units = 'centimeters';
+fig.PaperUnits = 'centimeters';
+fig.PaperSize = fig.Position(3:4);
+savepath = 'D:\Research\oddball_fig\xSubj\behav\';
+saveas(fig, sprintf('%sxSubj_vangle_dev.png',savepath));
+saveas(fig, sprintf('%sxSubj_vangle_dev.pdf',savepath));
+
 
 
 %% Merge epoch_lib to perform ERPImage using EEGLAB function
@@ -187,8 +271,8 @@ output = merge_epoch_lib(epoch_lib);
 
 %% plot ERPImage
 thres_amp = 30;
-savepath = 'D:\Research\oddball_fig\xSubj\ERPImage\';
-for tarCh = {'Cz','CPz','POz','O2'}
+savepath = 'D:\Research\oddball_fig\xSubj\ERPImage\new_merged\';
+for tarCh = {'CPz','POz','O2'}
     loc_path = sprintf('%s%s/',savepath,tarCh{:});
     if ~exist(loc_path,'dir')
         mkdir(loc_path)
@@ -227,8 +311,8 @@ for tarCh = {'Cz','CPz','POz','O2'}
 
             plt_EEG = pop_select(plt_EEG,'channel',tarCh);
             % [plt_EEG,rm_idx] = pop_autorej(plt_EEG,'threshold',50,'nogui','on');
-            [plt_EEG, rm_idx] = pop_eegthresh(plt_EEG,1,1,-thres_amp,thres_amp,plt_EEG.xmin,plt_EEG.xmax,0,0);
-            plt_EEG = pop_rejepoch(plt_EEG, rm_idx, 0);
+%             [plt_EEG, rm_idx] = pop_eegthresh(plt_EEG,1,1,-thres_amp,thres_amp,plt_EEG.xmin,plt_EEG.xmax,0,0);
+%             plt_EEG = pop_rejepoch(plt_EEG, rm_idx, 0);
             idx_cir_1 = cellfun(@(x) ~isempty(regexp(x,'Standard','once')),{plt_EEG.event.type});
             idx_cir_2 = cellfun(@(x) ~isempty(regexp(x,'\(L\)','once')),{plt_EEG.event.type});
             idx_cir = idx_cir_1 | idx_cir_2;
@@ -262,13 +346,9 @@ for tarCh = {'Cz','CPz','POz','O2'}
             fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
             pop_erpimage(plt_EEG,1, [1],[[]],tarCh{:},smoothing,1,sort_name,[],'latency','yerplabel','\muV','erp','on','cbar','on','topo', { [1] plt_EEG.chanlocs plt_EEG.chaninfo } );
             % for printing PDF
-            set(gca,'units','centimeters')
-            pos = get(gca,'Position');
-            ti = get(gca,'TightInset');
-            set(gcf, 'PaperUnits','centimeters');
-            set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-            set(gcf, 'PaperPositionMode', 'manual');
-            set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+            fig.Units = 'centimeters';
+            fig.PaperUnits = 'centimeters';
+            fig.PaperSize = fig.Position(3:4);
             saveas(fig, sprintf('%s%s_%s_%s_%s.png',loc_path,cond_name{:},lock_name{:},ev_name{:},tarCh{:}));
             close(fig)
             end

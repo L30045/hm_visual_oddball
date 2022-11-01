@@ -1180,3 +1180,233 @@ for d_i = 1:4
 
 end
 
+%% investigate grab timing for merged condition
+savepath = 'D:\Research\oddball_fig\xSubj\event latency\';
+plt_func = @mean;
+
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+ax_lib = cell(1,2);
+for cond_i = 1:2
+        switch cond_i
+            case 1
+                cond_name = 'noHm';
+                t_name = 'Eye-shifting';
+            case 2
+                cond_name = 'Hm';
+                t_name = 'Freely-moving';
+        end
+    plt_grab_gip = [];
+    plt_grab_fix = [];
+    plt_fix_gip = [];
+    for d_i = 1:4
+        plt_lib = merge_dir_lib{d_i};    
+        output = find_ev_time(plt_lib{cond_i});
+        
+        plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
+        plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
+        plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+        
+        plt_grab_gip = [plt_grab_gip, plt_diff1];
+        plt_grab_fix = [plt_grab_fix, plt_diff2];
+        plt_fix_gip = [plt_fix_gip, plt_diff3];
+    end    
+    
+    ax1 = subplot(3,2,cond_i);
+    title(ax1, sprintf('%s',t_name));
+    hs = histogram(plt_grab_gip,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-GIP (mean.=%dms)',round(plt_func(plt_grab_gip))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+    grid on
+    hold on
+    ax2 = subplot(3,2,cond_i*2+(cond_i==1));
+    grid on
+    hold on
+    hs = histogram(plt_grab_fix,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-Fix (mean.=%dms)',round(plt_func(plt_grab_fix))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+    ax3 = subplot(3,2,cond_i*3+2*(cond_i==1));
+    grid on
+    hold on
+    hs = histogram(plt_fix_gip,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (mean.=%dms)',round(plt_func(plt_fix_gip))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    xlabel('latency (ms)')
+    ylabel('Probability')
+    set(gca,'fontsize',20)
+    set(gcf,'color','w')
+    
+    ax_lib{cond_i} = [ax1,ax2,ax3];
+end
+
+linkaxes([ax_lib{:}],'x')
+fig.Units = 'centimeters';
+fig.PaperUnits = 'centimeters';
+fig.PaperSize = fig.Position(3:4);
+saveas(fig, sprintf('%sevent_latency_allDir_cir.png',savepath));
+saveas(fig, sprintf('%sevent_latency_allDir_cir.pdf',savepath));
+close(fig)
+
+%% separate quick grab-gip event
+plt_epoch = output{2}; % 1 = noHm, 2 = Hm 
+tarCh = 'Cz';
+plt_EEG = pop_select(plt_epoch.gip_std,'channel',{tarCh});
+% get grab-gip latency
+grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'Right Trigger is holded'),x),1), {plt_EEG.epoch.eventtype},'uniformoutput',0);
+fix_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'circle_fix_start'),x),1), {plt_EEG.epoch.eventtype},'uniformoutput',0);
+% remove missing event
+rm_idx = cellfun(@isempty,grab_idx)|cellfun(@isempty,fix_idx);
+plt_EEG = pop_rejepoch(plt_EEG,rm_idx,0);
+grab_idx = grab_idx(~rm_idx);
+% separate 0 < grab-gip latenc <= 100ms
+grab_t = zeros(1,length(grab_idx));
+for ev_i = 1:length(grab_idx)
+    grab_t(ev_i) = plt_EEG.epoch(ev_i).eventlatency{grab_idx{ev_i}}; % ms
+end
+% weird 0 epoch
+zero_epoch = pop_rejepoch(plt_EEG,~(grab_t==0),0);
+% 100ms epoch
+short_react_epoch = pop_rejepoch(plt_EEG,(grab_t==0)|(grab_t>100),0);
+% the rest
+normal_epoch =  pop_rejepoch(plt_EEG,grab_t<=100,0);
+
+% visualization
+% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+plt_t = zero_epoch.times;
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+% >> Zeros
+hc = shadedErrorBar(plt_t, squeeze(zero_epoch.data)', shaded_method,'lineprops',...
+    {'color','r','linewidth',3,'DisplayName','Zero'});
+grid on
+hold on
+% >> short
+hc = shadedErrorBar(plt_t, squeeze(short_react_epoch.data)', shaded_method,'lineprops',...
+    {'color','g','linewidth',3,'DisplayName','Short'});
+% >> short
+hc = shadedErrorBar(plt_t, squeeze(normal_epoch.data)', shaded_method,'lineprops',...
+    {'color','b','linewidth',3,'DisplayName','Normal'});
+
+
+% fixation
+fix_EEG = pop_select(plt_epoch.fix_std,'channel',{tarCh});
+% get grab-gip latency
+grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'grab'),x),1), {fix_EEG.epoch.eventtype},'uniformoutput',0);
+gip_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'circle_gip_start'),x),1), {fix_EEG.epoch.eventtype},'uniformoutput',0);
+rm_idx = cellfun(@isempty, grab_idx)|cellfun(@isempty, gip_idx);
+% remove missing event
+fix_EEG = pop_rejepoch(fix_EEG,rm_idx,0);
+grab_idx = grab_idx(~rm_idx);
+gip_idx = gip_idx(~rm_idx);
+% separate 0 < grab-gip latenc <= 100ms
+grab_t = zeros(1,length(grab_idx));
+gip_t = zeros(1,length(gip_idx));
+for ev_i = 1:length(grab_idx)
+    grab_t(ev_i) = fix_EEG.epoch(ev_i).eventlatency{grab_idx{ev_i}}; % ms
+    gip_t(ev_i) = fix_EEG.epoch(ev_i).eventlatency{gip_idx{ev_i}}; % ms
+end
+t_diff = grab_t-gip_t;
+% weird 0 epoch
+zero_epoch = pop_rejepoch(fix_EEG,~(t_diff==0),0);
+% 100ms epoch
+short_react_epoch = pop_rejepoch(fix_EEG,(t_diff==0)|(t_diff>100),0);
+% the rest
+normal_epoch =  pop_rejepoch(fix_EEG,t_diff<=100,0);
+% visualization
+% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+plt_t = zero_epoch.times;
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+% >> Zeros
+hc = shadedErrorBar(plt_t, squeeze(zero_epoch.data)', shaded_method,'lineprops',...
+    {'color','r','linewidth',3,'DisplayName',sprintf('Zero (%d)',zero_epoch.trials)});
+grid on
+hold on
+% >> short
+hc = shadedErrorBar(plt_t, squeeze(short_react_epoch.data)', shaded_method,'lineprops',...
+    {'color','g','linewidth',3,'DisplayName',sprintf('Short (%d)',short_react_epoch.trials)});
+% >> short
+hc = shadedErrorBar(plt_t, squeeze(normal_epoch.data)', shaded_method,'lineprops',...
+    {'color','b','linewidth',3,'DisplayName',sprintf('Normal (%d)',normal_epoch.trials)});
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
+
+
+%% THE NUMBER OF FIXATION TRIAL DOES NOT MATCH WITH GIP TRIALS AND GIP ONSET TIME IS OVERLAPED WITH GRAB EVENT INSTEAD OF "LEFT"
+% extract event timing from stimulus lock epoch
+ev_name = 'triangle_fix_start';
+stim_epoch = output{1}.dev_epoch;
+% get event latency
+gip_idx = cellfun(@(x) find(cellfun(@(y) ismember(y,{'Up','Bottom','Left','Right'}),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+fix_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,ev_name),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+rm_idx = cellfun(@isempty, gip_idx)|cellfun(@isempty,fix_idx);
+if strcmp(ev_name, 'circle_fix_start')
+    grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'grab'),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+    rm_idx = rm_idx|cellfun(@isempty, grab_idx);
+    grab_idx = grab_idx(~rm_idx);
+    grab_t = zeros(1,length(grab_idx));
+end
+gip_idx = gip_idx(~rm_idx);
+fix_idx = fix_idx(~rm_idx);
+stim_epoch = pop_rejepoch(stim_epoch,rm_idx,0);
+% find time
+
+gip_t =  zeros(1,length(gip_idx));
+fix_t =  zeros(1,length(gip_idx));
+for ev_i = 1:length(gip_idx)
+    if strcmp(ev_name, 'circle_fix_start')
+        grab_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{grab_idx{ev_i}}; % ms
+    end
+    gip_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{gip_idx{ev_i}}; % ms
+    fix_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{fix_idx{ev_i}}; % ms
+end
+% extract data
+tarCh = 'Cz';
+srate = stim_epoch.srate;
+ch_idx = ismember({stim_epoch.chanlocs.labels},tarCh);
+plt_data = squeeze(stim_epoch.data(ch_idx,:,:));
+lock_name = 'fix';
+switch lock_name
+    case 'gip'
+        lock_t = gip_t;
+    case 'fix'
+        lock_t = fix_t;
+    case 'grab'
+        lock_t = grab_t;
+end
+% arrange data timing
+len_epoch = [-500 1000];
+align_epoch = nan(diff(len_epoch)/1000*srate,size(plt_data,2));
+epoch_center = abs(len_epoch(1))/1000*srate;
+ev_start = max(round((lock_t-len_epoch(1))/1000*srate),1);
+ev_end = min(round((lock_t+len_epoch(2))/1000*srate),size(plt_data,1));
+for ev_i = 1:size(plt_data,2)
+    extract_data =  plt_data(:,ev_i);
+    ev_lock = round(lock_t(ev_i)/1000*srate);
+    ev_start = max(round((lock_t(ev_i)+len_epoch(1))/1000*srate),1);
+    ev_end = min(round((lock_t(ev_i)+len_epoch(2))/1000*srate),size(plt_data,1));
+    % after ev
+    len_after = ev_end-ev_lock;
+    align_epoch(epoch_center:epoch_center+len_after,ev_i) = extract_data(ev_lock:ev_end);
+    % before ev
+    len_before = ev_lock-ev_start;
+    align_epoch((epoch_center-len_before+1):epoch_center-1,ev_i) = extract_data(ev_start+1:ev_lock-1);
+end
+
+% sort
+ev_sort = grab_t-gip_t;
+[~,sort_idx] = sort(ev_sort);
+
+% figure
+% h = pcolor([align_epoch(:,sort_idx),nan(375,1);nan(1,181)]');
+% set(h,'edgecolor','none')
+plt_t = len_epoch(1)+(1000/srate):(1000/srate):len_epoch(2);
+figure
+shadedErrorBar(plt_t,align_epoch',shaded_method)
+grid on
+title(lock_name)
+
+% IT SEEMS THAT EPOCH_EZ DOES NOT ASSIGN THE CORRECT EVENT MARKER.
+

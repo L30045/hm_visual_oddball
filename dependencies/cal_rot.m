@@ -59,7 +59,7 @@ for v_i = vel_win_len+1:size(loc_d,2)-vel_win_len
         pos_d(v_i) = ((loc_d(1,v_i+vel_win_len)-loc_d(1,v_i-vel_win_len))>=0)*2-1;
         angdiff(v_i) = acos(nomi/denomi - tolerance)/pi*180 * pos_d(v_i);
 %         angdiff(v_i) = angle(nomi/denomi)/pi*180 * pos_d(v_i);
-        v_ang(v_i) = angdiff(v_i) / (0.001*velocity_smooth_win_len)/pi*180;
+        v_ang(v_i) = angdiff(v_i) / (0.001*velocity_smooth_win_len);
         ang(v_i) = acos(double(loc_d(2,v_i)/norm(loc_d(:,v_i))) - tolerance)/pi*180 * sign(loc_d(1,v_i));
 %         ang(v_i) = angle(double(loc_d(2,v_i)/norm(loc_d(:,v_i))))/pi*180 * sign(loc_d(1,v_i));
     end

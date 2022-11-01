@@ -6,7 +6,6 @@ output = struct('cir', ev_time, 'tri', ev_time);
 for lock_i = 1:2
     switch lock_i
         case 1
-            
             EEG = epoch_struct.std_epoch;
             gip_marker = 'circle_gip_start';
             fix_marker = 'circle_fix_start';
@@ -42,10 +41,14 @@ for lock_i = 1:2
         end
         count = count+1;
     end
-    
+    % remove event with gip - stim < 100 ms
+    rm_idx = gip_t < 100;
+    gip_t = gip_t(~rm_idx);
+    fix_t = fix_t(~rm_idx);
     output.(field_name).diff_gip_stim = gip_t;
     output.(field_name).diff_fix_stim = fix_t;
     if lock_i == 1
+        grab_t = grab_t(~rm_idx);
         output.(field_name).diff_grab_stim = grab_t;
     end
 end

@@ -1,8 +1,9 @@
-function [fig,varargout] = plt_erp_meanXsubj(epoch_lib, cond_name, ev_name, tarCh, thres_time, rm_thres, shaded_method)
-nb_subj = size(epoch_lib,2);
-len_stim = size(epoch_lib{1}.std_epoch.data,2);
-len_gip = size(epoch_lib{1}.gip_std.data,2);
-[fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
+function [fig,varargout] = plt_erp_meanXsubj_v2(merge_struct, cond_name, ev_name, tarCh, thres_time, rm_thres, shaded_method)
+% this version used merged EEG struct instead of individual epoch struct
+nb_subj = size(merge_struct,2);
+len_stim = size(merge_struct{1}.std_epoch.data,2);
+len_gip = size(merge_struct{1}.gip_std.data,2);
+[fix_subj_idx, grab_subj_idx] = find_if_device(merge_struct);
 
 switch ev_name
     case 'stim'
@@ -12,22 +13,22 @@ switch ev_name
         tri_lib = zeros(nb_subj,len_gip);
         cir_lib = zeros(nb_subj,len_gip);
     case 'fix'
-        epoch_lib = epoch_lib(:,fix_subj_idx(1,:) & fix_subj_idx(2,:));
-        nb_subj = size(epoch_lib,2);
+        merge_struct = merge_struct(:,fix_subj_idx(1,:) & fix_subj_idx(2,:));
+        nb_subj = size(merge_struct,2);
         tri_lib = zeros(nb_subj,len_gip);
         cir_lib = zeros(nb_subj,len_gip);
     case 'grab'
-        epoch_lib = epoch_lib(:,grab_subj_idx(1,:) & grab_subj_idx(2,:));
-        nb_subj = size(epoch_lib,2);
+        merge_struct = merge_struct(:,grab_subj_idx(1,:) & grab_subj_idx(2,:));
+        nb_subj = size(merge_struct,2);
         cir_lib = zeros(nb_subj,len_gip);
 end
 
 for i = 1:nb_subj
     switch cond_name
         case 'noHm'
-            cond_struct = epoch_lib{1,i};
+            cond_struct = merge_struct{1,i};
         case 'Hm'
-            cond_struct = epoch_lib{2,i};
+            cond_struct = merge_struct{2,i};
     end
     % remove trials by GIP latency
     cond_struct = my_rmEpoch(cond_struct,thres_time);
