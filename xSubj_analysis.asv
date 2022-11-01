@@ -1149,8 +1149,8 @@ for d_i = 1:4
         set(gcf,'color','w')
         linkaxes([ax1,ax2,ax3],'x')
 
-        saveas(fig, sprintf('%sevent_latency_%s_%s_cir.png',savepath,cond_name,dir_name{d_i}));
-        close(fig)
+%         saveas(fig, sprintf('%sevent_latency_%s_%s_cir.png',savepath,cond_name,dir_name{d_i}));
+%         close(fig)
     end    
 
     % dev
@@ -1174,8 +1174,8 @@ for d_i = 1:4
         title(sprintf('%s',cond_name))
         set(gca,'fontsize',20)
         set(gcf,'color','w')
-        saveas(fig, sprintf('%sevent_latency_%s_%s_tri.png',savepath,cond_name,dir_name{d_i}));
-        close(fig)
+%         saveas(fig, sprintf('%sevent_latency_%s_%s_tri.png',savepath,cond_name,dir_name{d_i}));
+%         close(fig)
     end    
 
 end
@@ -1410,6 +1410,8 @@ title(lock_name)
 
 % IT SEEMS THAT EPOCH_EZ DOES NOT ASSIGN THE CORRECT EVENT MARKER.
 %% check epoch_lib one by one
+check_equal = false(1,length(epoch_lib(:)));
+t_diff = cell(1,length(epoch_lib(:)));
 for i = 1:length(epoch_lib(:))
     test_epoch = epoch_lib{i};
     output = find_ev_time(test_epoch);
@@ -1417,7 +1419,7 @@ for i = 1:length(epoch_lib(:))
     plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
 %     plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
 %     plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
-
+    t_diff{i} = plt_diff1;
     check_equal(i) = any(plt_diff1==0);
 end
 

@@ -800,7 +800,7 @@ smoothing = 10;
 figure; pop_erpimage(plt_EEG,1, [1],[[]],tarCh,smoothing,1,sort_name,[],'latency','yerplabel','\muV','erp','on','cbar','on','topo', { [1] plt_EEG.chanlocs plt_EEG.chaninfo } );
 
 %% plot ERP
-tarCh = 'CPz';
+tarCh = 'Cz';
 ev_name = 'gip';
 cond_name = 'Hm';
 switch cond_name
@@ -889,11 +889,11 @@ ori_nb_trial = zeros(4,14,2);
 for i = 1:size(epoch_lib,2)
     for cond_i = 1:2
         tmp_epoch = epoch_lib{cond_i,i};
-        ori_nb_trial(1,i,cond_i) = size(tmp_epoch.std_epoch.data,3);
-        ori_nb_trial(2,i,cond_i) = size(tmp_epoch.dev_epoch.data,3);
-        ori_nb_trial(3,i,cond_i) = size(tmp_epoch.gip_std.data,3);
-        ori_nb_trial(4,i,cond_i) = size(tmp_epoch.gip_dev.data,3);
-        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,i});
+%         ori_nb_trial(1,i,cond_i) = size(tmp_epoch.std_epoch.data,3);
+%         ori_nb_trial(2,i,cond_i) = size(tmp_epoch.dev_epoch.data,3);
+%         ori_nb_trial(3,i,cond_i) = size(tmp_epoch.gip_std.data,3);
+%         ori_nb_trial(4,i,cond_i) = size(tmp_epoch.gip_dev.data,3);
+%         tmp_epoch = my_rmEpoch(epoch_lib{cond_i,i});
         nb_trial(1,i,cond_i) = size(tmp_epoch.std_epoch.data,3);
         nb_trial(2,i,cond_i) = size(tmp_epoch.dev_epoch.data,3);
         nb_trial(3,i,cond_i) = size(tmp_epoch.gip_std.data,3);
@@ -910,7 +910,7 @@ end
 fix_subj_idx = sum(fix_subj_idx,1)==2;
 grab_subj_idx = sum(grab_subj_idx,1)==2;
 select_idx = fix_subj_idx & grab_subj_idx;
-cond_i = 2;
+cond_i = 1;
 thres_time = [100 1500];
 grab_time = cellfun(@(x) x.event_time.grab_time, epoch_lib(cond_i,select_idx),'uniformoutput',0);
 stim_time = cellfun(@(x) x.event_time.std_time, epoch_lib(cond_i,select_idx),'uniformoutput',0);
@@ -1149,8 +1149,8 @@ for d_i = 1:4
         set(gcf,'color','w')
         linkaxes([ax1,ax2,ax3],'x')
 
-        saveas(fig, sprintf('%sevent_latency_%s_%s_cir.png',savepath,cond_name,dir_name{d_i}));
-        close(fig)
+%         saveas(fig, sprintf('%sevent_latency_%s_%s_cir.png',savepath,cond_name,dir_name{d_i}));
+%         close(fig)
     end    
 
     % dev
@@ -1174,8 +1174,8 @@ for d_i = 1:4
         title(sprintf('%s',cond_name))
         set(gca,'fontsize',20)
         set(gcf,'color','w')
-        saveas(fig, sprintf('%sevent_latency_%s_%s_tri.png',savepath,cond_name,dir_name{d_i}));
-        close(fig)
+%         saveas(fig, sprintf('%sevent_latency_%s_%s_tri.png',savepath,cond_name,dir_name{d_i}));
+%         close(fig)
     end    
 
 end

@@ -101,7 +101,6 @@ idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type})
 idx_blue = cellfun(@(x) ~isempty(regexp(x, 'blue_cube', 'ONCE')), {EEG.event.type});
 std_ev = {EEG.event(idx_std).type};
 dev_ev = {EEG.event(idx_dev).type};
-grab_ev = [EEG.event(idx_tri).latency];
 
 %% calculate fixation
 % fix_struct = cal_fix_pupil(test_data,data_struct.srate);
@@ -187,15 +186,19 @@ gip_1st_dev = find(gip_up_idx|gip_down_idx|gip_left_idx|gip_right_idx);
 miss_idx_dev = find(miss_idx);
 f_std = find(idx_std);
 f_dev = find(idx_dev);
+
+
 gipStd_time = zeros(1,length(f_std));
+count = 1;
 for i = 1:length(f_std)
     if ~ ismember(f_std(i), miss_idx_std)
-        t_f = gip_1st_std(i);
+        t_f = gip_1st_std(count);
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'circle_gip_start';
         gipStd_time(i) = EEG.event(t_f).latency/EEG.srate*1000; % msec
         EEG.event(len_event+1).latency = EEG.event(t_f).latency; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
+        count = count+1;
     else
         gipStd_time(i) = NaN;
         len_event = length(EEG.event);
@@ -207,14 +210,16 @@ end
 
 
 gipDev_time = zeros(1,length(f_dev));
+count = 1;
 for i = 1:length(f_dev)
     if ~ismember(f_dev(i), miss_idx_dev)
-        t_f = gip_1st_dev(i);
+        t_f = gip_1st_dev(count);
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'triangle_gip_start';
         gipDev_time(i) = EEG.event(t_f).latency/EEG.srate*1000; % msec
         EEG.event(len_event+1).latency = EEG.event(t_f).latency; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
+        count = count+1;
     else
         gipDev_time(i) = NaN;
         len_event = length(EEG.event);
@@ -226,11 +231,27 @@ end
 
 %% adding event marker to EEG structure
 % adding grab marker
-for i = 1:length(grab_ev)
-    len_event = length(EEG.event);
-    EEG.event(len_event+1).type = 'grab';
-    EEG.event(len_event+1).latency = grab_ev(i); 
-    EEG.event(len_event+1).urevent = len_event+1;
+grab_1st = find_1st_fix(EEG,find(idx_tri),f_std); % event index
+grab_1st_lat = nan(size(grab_1st));
+grab_time = nan(size(grab_1st));
+for i = 1:length(grab_1st)
+    if ~isnan(grab_1st)
+        grab_1st_lat(i) = EEG.event(grab_1st(i)).latency;
+        grab_time(i) = grab_1st_lat(i)/EEG.srate*1000;
+    end
+end
+for i = 1:length(grab_1st)
+    if ~isnan(grab_1st(i))
+        len_event = length(EEG.event);
+        EEG.event(len_event+1).type = 'grab';
+        EEG.event(len_event+1).latency = grab_1st_lat(i); 
+        EEG.event(len_event+1).urevent = len_event+1;
+    else
+        len_event = length(EEG.event);
+        EEG.event(len_event+1).type = 'grab missing';
+        EEG.event(len_event+1).latency = f_std(i); 
+        EEG.event(len_event+1).urevent = len_event+1;
+    end
 end
 
 %% add fixation event into EEG structure
@@ -258,54 +279,48 @@ end
 
 % find the first fixation after stimulus
 % find out stimulus onset time
-t_f_std = zeros(1,length(t_std_ori));
-for i = 1:length(t_std_ori)
-    t_f = fix_start(find(fix_start>t_std_ori(i),1));
-    if ~isempty(t_f)
-        t_f_std(i) = t_f;
+t_f_std = find_1st_fix(EEG,fix_start,t_std_ori); % fixation time, nan if missing
+t_f_dev = find_1st_fix(EEG,fix_start,t_dev_ori);
+
+for i = 1:length(t_f_std)
+    if ~isnan(t_f_std(i))
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'circle_fix_start';
-        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).latency = t_f_std(i)/1000*EEG.srate; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
     else
-        t_f_std(i) = NaN;
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'circle_fix_missing';
-        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).latency = t_std_ori(i)/1000*EEG.srate; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
     end
 end
-t_f_dev = zeros(1,length(t_dev_ori));
-for i = 1:length(t_dev_ori)
-    t_f = fix_start(find(fix_start>t_dev_ori(i),1));
-    if ~isempty(t_f)
-        t_f_dev(i) = t_f;
+
+for i = 1:length(t_f_dev)
+    if ~isnan(t_f_dev(i))
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'triangle_fix_start';
-        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).latency = t_f_dev(i)/1000*EEG.srate; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
     else
-        t_f_dev(i) = NaN;
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'triangle_fix_missing';
-        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).latency = t_dev_ori(i)/1000*EEG.srate; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
     end
 end
-t_f_blue = zeros(1,length(t_blue_ori));
-for i = 1:length(t_blue_ori)
-    t_f = fix_start(find(fix_start>t_blue_ori(i),1));
-    if ~isempty(t_f)
-        t_f_blue(i) = t_f;
+
+t_f_blue = find_1st_fix(EEG,fix_start,t_blue_ori);
+for i = 1:length(t_f_blue)
+    if ~isnan(t_f_blue(i))
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'blue_fix_start';
-        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).latency = t_f_blue(i)/1000*EEG.srate; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
     else
-        t_f_blue(i) = NaN;
         len_event = length(EEG.event);
         EEG.event(len_event+1).type = 'blue_fix_missing';
-        EEG.event(len_event+1).latency = t_f/1000*EEG.srate; % change to sample point
+        EEG.event(len_event+1).latency = t_blue_ori(i)/1000*EEG.srate; % change to sample point
         EEG.event(len_event+1).urevent = len_event+1;
     end
 end
@@ -349,38 +364,6 @@ end
 std_epoch = pop_epoch(EEG,std_ev,len_epoch/1000, 'epochinfo', 'yes');
 dev_epoch = pop_epoch(EEG,dev_ev,len_epoch/1000, 'epochinfo', 'yes');
 
-
-std_time = [EEG.event(idx_std).latency];
-grab_time = [EEG.event(idx_tri).latency];
-miss_grab_count = length(std_time)-length(grab_time);
-fprintf('Number of missing responses: %d\n', miss_grab_count);
-diff_time = zeros(1,length(std_time));
-for i = 1:length(std_time)-1
-    l_std = std_time(i);
-    r_t = grab_time(find(grab_time>l_std,1));
-    if isempty(r_t)
-        diff_time(i) = NaN;
-    else
-        if r_t > std_time(i+1)
-            diff_time(i) = NaN;
-        else
-            diff_time(i) = r_t-l_std;
-        end
-    end
-end
-l_std = std_time(end);
-r_t = grab_time(find(grab_time>l_std,1));
-if isempty(r_t)
-    diff_time(end) = NaN;
-else
-    diff_time(end) = r_t-l_std;
-end
-diff_time = diff_time/EEG.srate;
-fprintf('Median reaction time: %d ms\n',round(median(diff_time*1000)));
-diff_time = diff_time * 1000;
-% 631 ms for no headmovement
-% 765 ms for headmovement
-
 % grab
 if any(ismember({EEG.event.type},'grab'))
     grab_epoch = pop_epoch(EEG,{'grab'},len_epoch_grab/1000, 'epochinfo', 'yes');
@@ -416,10 +399,6 @@ for t_i = 1:size(dev_epoch.data,3)
         gip_count = gip_count+1;
     end
 end    
-% std_epoch = pop_rmbase(std_epoch,[max(len_epoch(1),std_epoch.times(1)) 0],[]);
-% dev_epoch = pop_rmbase(dev_epoch,[max(len_epoch(1),dev_epoch.times(1)) 0],[]);
-% gip_std = pop_rmbase(gip_std,[max(len_epoch_grab(1),gip_std.times(1)) 0],[]);
-% gip_dev = pop_rmbase(gip_dev,[max(len_epoch_grab(1),gip_dev.times(1)) 0],[]);
 % restore behavioral data
 std_epoch.data(nbchan+1:end,:,:) = behavi_std;
 dev_epoch.data(nbchan+1:end,:,:) = behavi_dev;
@@ -428,7 +407,14 @@ gip_dev.data(nbchan+1:end,:,:) = behavi_gdev;
 % some data missing grab event markers
 if ~isempty(grab_epoch)
     behavi_grab = grab_epoch.data(nbchan+1:end,:,:);
-    grab_epoch = pop_rmbase(grab_epoch,[len_epoch_grab(1) 0],[]);
+    % remove baseline
+    grab_count = 1;
+    for t_i = 1:size(grab_epoch.data,3)
+        if ~isnan(grab_time(t_i))
+            grab_epoch.data(:,:,t_i) = grab_epoch.data(:,:,t_i) - std_base(:,:,t_i);
+            grab_count = grab_count+1;
+        end
+    end
     grab_epoch.data(nbchan+1:end,:,:) = behavi_grab;
 end
 
@@ -444,8 +430,6 @@ if all(ismember({'circle_fix_start','triangle_fix_start'},{EEG.event.type}))
     behavi_fblue = fix_blue.data(nbchan+1:end,:,:);
     % remove baseline
     fix_epoch = pop_rmbase(fix_epoch,[max(len_epoch_grab(1),fix_epoch.times(1)) 0],[]);
-%     fix_std = pop_rmbase(fix_std,[max(len_epoch_grab(1),fix_std.times(1)) 0],[]);
-%     fix_dev = pop_rmbase(fix_dev,[max(len_epoch_grab(1),fix_dev.times(1)) 0],[]);
     fix_blue = pop_rmbase(fix_blue,[max(len_epoch_grab(1),fix_blue.times(1)) 0],[]);
     % remove baseline
     std_base = mean(std_epoch.data(:,1:find(std_epoch.times==0,1),:),2);
@@ -475,23 +459,9 @@ else
     fix_blue = [];
 end
 
-
-%% epoch auto rejection
-% std_epoch = pop_autorej(std_epoch,'electrodes',1:EEG_ica.nbchan-2,'nogui','on');
-% dev_epoch = pop_autorej(dev_epoch,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% grab_epoch = pop_autorej(grab_epoch,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% fix_epoch = pop_autorej(fix_epoch,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% fix_std = pop_autorej(fix_std,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% fix_dev = pop_autorej(fix_dev,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% ud_epoch = pop_autorej(ud_epoch,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% lr_epoch = pop_autorej(lr_epoch,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% gip_std = pop_autorej(gip_std,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-% gip_dev = pop_autorej(gip_dev,'electrodes',1:plt_EEG.nbchan-2,'nogui','on');
-
 %% record event time
 std_time = [EEG.event(idx_std).latency]/EEG.srate*1000; % msec
 dev_time = [EEG.event(idx_dev).latency]/EEG.srate*1000; % msec
-grab_time = [EEG.event(idx_tri).latency]/EEG.srate*1000; % msec
 diff_gip_std = gipStd_time - std_time;
 diff_gip_dev = gipDev_time - dev_time;
 fixAll_time = fix_start; % msec

@@ -349,8 +349,8 @@ for tarCh = {'Cz'}
             fig.Units = 'centimeters';
             fig.PaperUnits = 'centimeters';
             fig.PaperSize = fig.Position(3:4);
-%             saveas(fig, sprintf('%s%s_%s_%s_%s.png',loc_path,cond_name{:},lock_name{:},ev_name{:},tarCh{:}));
-%             close(fig)
+            saveas(fig, sprintf('%s%s_%s_%s_%s.png',loc_path,cond_name{:},lock_name{:},ev_name{:},tarCh{:}));
+            close(fig)
             end
         end
     end
