@@ -188,11 +188,11 @@ dev_left = left_idx(idx_dev);
 dev_right = right_idx(idx_dev);
 
 %% find GIP onset time
-gip_up_idx = cellfun(@(x) ~isempty(regexp(x,'Up','match','ONCE')),{EEG.event.type});
-gip_down_idx = cellfun(@(x) ~isempty(regexp(x,'Bottom','match','ONCE')),{EEG.event.type});
-gip_left_idx = cellfun(@(x) ~isempty(regexp(x,'Left','match','ONCE')),{EEG.event.type});
-gip_right_idx = cellfun(@(x) ~isempty(regexp(x,'Right','match','ONCE')),{EEG.event.type});
-gip_idx = find(gip_up_idx | gip_down_idx | gip_left_idx | gip_right_idx);
+gip_up= cellfun(@(x) strcmp(x,'Up'),{EEG.event.type});
+gip_down= cellfun(@(x) strcmp(x,'Bottom'),{EEG.event.type});
+gip_left= cellfun(@(x) strcmp(x,'Left'),{EEG.event.type});
+gip_right= cellfun(@(x) strcmp(x,'Right'),{EEG.event.type});
+gip_idx = find(gip_up|gip_down|gip_left|gip_right);
 
 % find the first fixation after stimulus
 % find out stimulus onset time

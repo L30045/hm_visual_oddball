@@ -1409,4 +1409,17 @@ grid on
 title(lock_name)
 
 % IT SEEMS THAT EPOCH_EZ DOES NOT ASSIGN THE CORRECT EVENT MARKER.
+%% check epoch_lib one by one
+check_equal = false(1,length(epoch_lib(:)));
+t_diff = cell(1,length(epoch_lib(:)));
+for i = 1:length(epoch_lib(:))
+    test_epoch = epoch_lib{i};
+    output = find_ev_time(test_epoch);
+
+    plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
+%     plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
+%     plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+    t_diff{i} = plt_diff1;
+    check_equal(i) = any(plt_diff1==0);
+end
 

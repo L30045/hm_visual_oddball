@@ -1353,9 +1353,9 @@ fix_idx = fix_idx(~rm_idx);
 stim_epoch = pop_rejepoch(stim_epoch,rm_idx,0);
 % find time
 
-gip_t =  zeros(1,length(grab_idx));
-fix_t =  zeros(1,length(grab_idx));
-for ev_i = 1:length(grab_idx)
+gip_t =  zeros(1,length(gip_idx));
+fix_t =  zeros(1,length(gip_idx));
+for ev_i = 1:length(gip_idx)
     if strcmp(ev_name, 'circle_fix_start')
         grab_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{grab_idx{ev_i}}; % ms
     end
@@ -1408,4 +1408,16 @@ shadedErrorBar(plt_t,align_epoch',shaded_method)
 grid on
 title(lock_name)
 
+% IT SEEMS THAT EPOCH_EZ DOES NOT ASSIGN THE CORRECT EVENT MARKER.
+%% check epoch_lib one by one
+for i = 1:length(epoch_lib(:))
+    test_epoch = epoch_lib{i};
+    output = find_ev_time(test_epoch);
+
+    plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
+%     plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
+%     plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+
+    check_equal(i) = any(plt_diff1==0);
+end
 

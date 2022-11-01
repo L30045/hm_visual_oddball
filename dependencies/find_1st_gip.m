@@ -13,10 +13,10 @@ f_std = find(tar_ev_idx);
 gip_1st = false(size(tar_ev_idx));
 miss_idx = false(size(tar_ev_idx));
 
-for i = 1:length(f_std)
+for i = 1:length(f_std)-1
     t_f = gip_idx(find(gip_idx>f_std(i),1));
     if ~isempty(t_f)
-        if i<length(f_std) && t_f < f_std(i+1)
+        if t_f < f_std(i+1)
             gip_1st(t_f) = true;
         else
             miss_idx(f_std(i)) = true;
@@ -24,6 +24,17 @@ for i = 1:length(f_std)
     else
         miss_idx(f_std(i)) = true;
     end
+end
+% last event
+t_f = gip_idx(find(gip_idx>f_std(end),1));
+if ~isempty(t_f)
+    if (EEG.event(t_f).latency - EEG.event(f_std(end)).latency)/EEG.srate <= 2
+        gip_1st(t_f) = true;
+    else
+        miss_idx(f_std(i)) = true;
+    end
+else
+    miss_idx(f_std(i)) = true;
 end
 
 gip_up_idx = gip_1st & gip_up;
