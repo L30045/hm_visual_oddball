@@ -910,7 +910,7 @@ end
 fix_subj_idx = sum(fix_subj_idx,1)==2;
 grab_subj_idx = sum(grab_subj_idx,1)==2;
 select_idx = fix_subj_idx & grab_subj_idx;
-cond_i = 1;
+cond_i = 2;
 thres_time = [100 1500];
 grab_time = cellfun(@(x) x.event_time.grab_time, epoch_lib(cond_i,select_idx),'uniformoutput',0);
 stim_time = cellfun(@(x) x.event_time.std_time, epoch_lib(cond_i,select_idx),'uniformoutput',0);
@@ -1183,7 +1183,7 @@ end
 %% investigate grab timing for merged condition
 savepath = 'D:\Research\oddball_fig\xSubj\event latency\';
 plt_func = @mean;
-
+plt_lib = merged_lib;
 fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
 ax_lib = cell(1,2);
 for cond_i = 1:2
@@ -1198,8 +1198,8 @@ for cond_i = 1:2
     plt_grab_gip = [];
     plt_grab_fix = [];
     plt_fix_gip = [];
-    for d_i = 1:4
-        plt_lib = merge_dir_lib{d_i};    
+%     for d_i = 1:4
+%         plt_lib = merge_dir_lib{d_i};    
         output = find_ev_time(plt_lib{cond_i});
         
         plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
@@ -1209,7 +1209,7 @@ for cond_i = 1:2
         plt_grab_gip = [plt_grab_gip, plt_diff1];
         plt_grab_fix = [plt_grab_fix, plt_diff2];
         plt_fix_gip = [plt_fix_gip, plt_diff3];
-    end    
+%     end    
     
     ax1 = subplot(3,2,cond_i);
     title(ax1, sprintf('%s',t_name));
@@ -1246,9 +1246,9 @@ linkaxes([ax_lib{:}],'x')
 fig.Units = 'centimeters';
 fig.PaperUnits = 'centimeters';
 fig.PaperSize = fig.Position(3:4);
-saveas(fig, sprintf('%sevent_latency_allDir_cir.png',savepath));
-saveas(fig, sprintf('%sevent_latency_allDir_cir.pdf',savepath));
-close(fig)
+% saveas(fig, sprintf('%sevent_latency_allDir_cir.png',savepath));
+% saveas(fig, sprintf('%sevent_latency_allDir_cir.pdf',savepath));
+% close(fig)
 
 %% separate quick grab-gip event
 plt_epoch = output{2}; % 1 = noHm, 2 = Hm 

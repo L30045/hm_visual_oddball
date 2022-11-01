@@ -267,7 +267,7 @@ savepath = 'D:\Research\oddball_fig\xSubj\behav\';
 
 
 %% Merge epoch_lib to perform ERPImage using EEGLAB function
-output = merge_epoch_lib(epoch_lib);
+merged_lib = merge_epoch_lib(epoch_lib);
 
 %% plot ERPImage
 thres_amp = 30;
@@ -289,24 +289,24 @@ for tarCh = {'Cz'}
                 switch lock_name{:}
                     case 'stim'
                         if strcmp(ev_name{:},'cir')
-                            plt_EEG = output{cond_i}.std_epoch;
+                            plt_EEG = merged_lib{cond_i}.std_epoch;
                         else
-                            plt_EEG = output{cond_i}.dev_epoch;
+                            plt_EEG = merged_lib{cond_i}.dev_epoch;
                         end
                     case 'gip'
                         if strcmp(ev_name{:},'cir')
-                            plt_EEG = output{cond_i}.gip_std;
+                            plt_EEG = merged_lib{cond_i}.gip_std;
                         else
-                            plt_EEG = output{cond_i}.gip_dev;
+                            plt_EEG = merged_lib{cond_i}.gip_dev;
                         end
                     case 'fix'
                         if strcmp(ev_name{:},'cir')
-                            plt_EEG = output{cond_i}.fix_std;
+                            plt_EEG = merged_lib{cond_i}.fix_std;
                         else
-                            plt_EEG = output{cond_i}.fix_dev;
+                            plt_EEG = merged_lib{cond_i}.fix_dev;
                         end
                     case 'grab'
-                        plt_EEG = output{cond_i}.grab_epoch;
+                        plt_EEG = merged_lib{cond_i}.grab_epoch;
                 end
 
             plt_EEG = pop_select(plt_EEG,'channel',tarCh);
@@ -358,8 +358,8 @@ end
 
 %% plot ERP
 tarCh = 'Cz';
-lock_name = 'stim';
-cond_name = 'Hm';
+lock_name = 'fix';
+cond_name = 'noHm';
 switch cond_name
     case 'noHm'
         cond_i = 1;
@@ -368,14 +368,14 @@ switch cond_name
 end
 switch lock_name
     case 'stim'
-        plt_EEG_cir = output{cond_i}.std_epoch;
-        plt_EEG_tri = output{cond_i}.dev_epoch;
+        plt_EEG_cir = merged_lib{cond_i}.std_epoch;
+        plt_EEG_tri = merged_lib{cond_i}.dev_epoch;
     case 'gip'
-        plt_EEG_cir = output{cond_i}.gip_std;
-        plt_EEG_tri = output{cond_i}.gip_dev;
+        plt_EEG_cir = merged_lib{cond_i}.gip_std;
+        plt_EEG_tri = merged_lib{cond_i}.gip_dev;
     case 'fix'
-        plt_EEG_cir = output{cond_i}.fix_std;
-        plt_EEG_tri = output{cond_i}.fix_dev;
+        plt_EEG_cir = merged_lib{cond_i}.fix_std;
+        plt_EEG_tri = merged_lib{cond_i}.fix_dev;
 end
 shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
 % shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan'))};
@@ -393,10 +393,10 @@ for cond_name = {'noHm','Hm'}
             case 'Hm'
                 cond_i = 2;
         end
-        diff_gip_std = output{cond_i}.event_time.gipStd_time - output{cond_i}.event_time.std_time;
-        diff_gip_dev = output{cond_i}.event_time.gipDev_time - output{cond_i}.event_time.dev_time;
-        diff_fix_std = output{cond_i}.event_time.fixStd_time - output{cond_i}.event_time.std_time;
-        diff_fix_dev = output{cond_i}.event_time.fixDev_time - output{cond_i}.event_time.dev_time;
+        diff_gip_std = merged_lib{cond_i}.event_time.gipStd_time - merged_lib{cond_i}.event_time.std_time;
+        diff_gip_dev = merged_lib{cond_i}.event_time.gipDev_time - merged_lib{cond_i}.event_time.dev_time;
+        diff_fix_std = merged_lib{cond_i}.event_time.fixStd_time - merged_lib{cond_i}.event_time.std_time;
+        diff_fix_dev = merged_lib{cond_i}.event_time.fixDev_time - merged_lib{cond_i}.event_time.dev_time;
         diff_gip_std = diff_gip_std(diff_gip_std>=thres_time(1)&diff_gip_std<=thres_time(2));
         diff_gip_dev = diff_gip_dev(diff_gip_dev>=thres_time(1)&diff_gip_dev<=thres_time(2));
         diff_fix_std = diff_fix_std(diff_fix_std>=thres_time(1)&diff_fix_std<=thres_time(2));
@@ -435,12 +435,79 @@ for cond_name = {'noHm','Hm'}
         set(gcf, 'PaperPositionMode', 'manual');
         set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
 %         saveas(fig, sprintf('%s%s_%s_latency.png',savepath,cond_name{:},lock_name{:}));
-        saveas(fig, sprintf('%s%s_%s_latency.pdf',savepath,cond_name{:},lock_name{:}));
-        close(fig)
+%         saveas(fig, sprintf('%s%s_%s_latency.pdf',savepath,cond_name{:},lock_name{:}));
+%         close(fig)
         
     end
 end
 
+%% investigate grab timing for merged condition
+savepath = 'D:\Research\oddball_fig\xSubj\event latency\';
+plt_func = @mean;
+plt_lib = merged_lib;
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+ax_lib = cell(1,2);
+for cond_i = 1:2
+        switch cond_i
+            case 1
+                cond_name = 'noHm';
+                t_name = 'Eye-shifting';
+            case 2
+                cond_name = 'Hm';
+                t_name = 'Freely-moving';
+        end
+    plt_grab_gip = [];
+    plt_grab_fix = [];
+    plt_fix_gip = [];
+        output = find_ev_time(plt_lib{cond_i});
+        
+        plt_diff1 = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
+        plt_diff2 = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
+        plt_diff3 = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+        
+        plt_grab_gip = [plt_grab_gip, plt_diff1];
+        plt_grab_fix = [plt_grab_fix, plt_diff2];
+        plt_fix_gip = [plt_fix_gip, plt_diff3];
+%     end    
+    
+    ax1 = subplot(3,2,cond_i);
+    title(ax1, sprintf('%s',t_name));
+    hs = histogram(plt_grab_gip,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-GIP (mean.=%dms)',round(plt_func(plt_grab_gip))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','b');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+    grid on
+    hold on
+    ax2 = subplot(3,2,cond_i*2+(cond_i==1));
+    grid on
+    hold on
+    hs = histogram(plt_grab_fix,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Grab-Fix (mean.=%dms)',round(plt_func(plt_grab_fix))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','r');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+    ax3 = subplot(3,2,cond_i*3+2*(cond_i==1));
+    grid on
+    hold on
+    hs = histogram(plt_fix_gip,'binwidth',100,'Normalization','probability','DisplayName',sprintf('Fix-GIP (mean.=%dms)',round(plt_func(plt_fix_gip))),...
+                'DisplayStyle','Stairs','linewidth',3,'linestyle','-','edgecolor','m');
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    xlabel('latency (ms)')
+    ylabel('Probability')
+    set(gca,'fontsize',20)
+    set(gcf,'color','w')
+    
+    ax_lib{cond_i} = [ax1,ax2,ax3];
+end
+
+linkaxes([ax_lib{:}],'x')
+fig.Units = 'centimeters';
+fig.PaperUnits = 'centimeters';
+fig.PaperSize = fig.Position(3:4);
+% saveas(fig, sprintf('%sevent_latency_allDir_cir.png',savepath));
+% saveas(fig, sprintf('%sevent_latency_allDir_cir.pdf',savepath));
+% close(fig)
 
 
 %% Single subject analysis
