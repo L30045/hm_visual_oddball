@@ -101,6 +101,8 @@ idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type})
 idx_blue = cellfun(@(x) ~isempty(regexp(x, 'blue_cube', 'ONCE')), {EEG.event.type});
 std_ev = {EEG.event(idx_std).type};
 dev_ev = {EEG.event(idx_dev).type};
+std_time = [EEG.event(idx_std).latency]/EEG.srate*1000; % msec
+dev_time = [EEG.event(idx_dev).latency]/EEG.srate*1000; % msec
 
 %% calculate fixation
 % fix_struct = cal_fix_pupil(test_data,data_struct.srate);
@@ -231,7 +233,7 @@ end
 
 %% adding event marker to EEG structure
 % adding grab marker
-grab_1st = find_1st_fix(EEG,find(idx_tri),f_std); % event index
+grab_1st = find_1st_grab(EEG,find(idx_tri),f_std); % event index
 grab_1st_lat = nan(size(grab_1st));
 grab_time = nan(size(grab_1st));
 for i = 1:length(grab_1st)
@@ -279,8 +281,8 @@ end
 
 % find the first fixation after stimulus
 % find out stimulus onset time
-t_f_std = find_1st_fix(EEG,fix_start,t_std_ori); % fixation time, nan if missing
-t_f_dev = find_1st_fix(EEG,fix_start,t_dev_ori);
+t_f_std = find_1st_fix(fix_start,t_std_ori); % fixation time, nan if missing
+t_f_dev = find_1st_fix(fix_start,t_dev_ori);
 
 for i = 1:length(t_f_std)
     if ~isnan(t_f_std(i))
@@ -460,8 +462,6 @@ else
 end
 
 %% record event time
-std_time = [EEG.event(idx_std).latency]/EEG.srate*1000; % msec
-dev_time = [EEG.event(idx_dev).latency]/EEG.srate*1000; % msec
 diff_gip_std = gipStd_time - std_time;
 diff_gip_dev = gipDev_time - dev_time;
 fixAll_time = fix_start; % msec

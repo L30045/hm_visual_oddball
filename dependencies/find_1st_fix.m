@@ -1,4 +1,4 @@
-function fix_1st = find_1st_fix(EEG,fix_start,tar_t)
+function fix_1st = find_1st_fix(fix_start,tar_t)
 % both input is in the unit of ms.
 % this function find the first gip report after stimulus onset
 %% find GIP onset time
@@ -15,7 +15,7 @@ end
 % last event
 t_f = fix_start(find(fix_start>tar_t(end),1));
 if ~isempty(t_f)
-    if (EEG.event(t_f).latency - EEG.event(tar_t(end)).latency)/EEG.srate <= 2
+    if t_f-tar_t(end)<= 2000
         fix_1st(end) = t_f;
     end
 end
