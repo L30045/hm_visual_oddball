@@ -94,7 +94,7 @@ else
     idx_dev = idx_dev & idx_cond;
 end
 if sum(idx_std|idx_dev)~=100
-    error('[Trial Number Incorrect]: Total number of trials is not 100.')
+    disp('[Trial Number Warning]: Total number of trials is not 100.')
 end
 idx_tri = cellfun(@(x) ~isempty(regexp(x, 'Trigger', 'ONCE')), {EEG.event.type});
 % idx_tri(find(idx_tri,2,'last')) = false;
