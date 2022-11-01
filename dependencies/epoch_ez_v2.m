@@ -237,7 +237,7 @@ grab_1st = find_1st_grab(EEG,find(idx_tri),f_std); % event index
 grab_1st_lat = nan(size(grab_1st));
 grab_time = nan(size(grab_1st));
 for i = 1:length(grab_1st)
-    if ~isnan(grab_1st)
+    if ~isnan(grab_1st(i))
         grab_1st_lat(i) = EEG.event(grab_1st(i)).latency;
         grab_time(i) = grab_1st_lat(i)/EEG.srate*1000;
     end
