@@ -38,3 +38,18 @@ parfor j = 1:length(subj_list)
     parsave([savepath,sprintf('rmPreStim_s%02d_epoch.mat',subj_i)],epoch_struct_noHm,epoch_struct_Hm);
 end
 disp('Done')
+
+%% save epoch_lib
+filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+subj_list = {dir([filepath, 'rmPreStim*']).name};
+savepath = filepath;
+
+epoch_lib = cell(2,length(subj_list));
+for i = 1:length(subj_list)
+    load([filepath,subj_list{i}]);
+    epoch_lib{1,i} = epoch_struct_noHm;
+    epoch_lib{2,i} = epoch_struct_Hm;
+end
+% savepath = filepath;
+save([savepath,'epoch_lib_rmPreStim.mat'],'-v7.3','epoch_lib');
+disp('Done')
