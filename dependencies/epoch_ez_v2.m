@@ -312,7 +312,7 @@ for i = 1:length(t_f_dev)
     end
 end
 
-t_f_blue = find_1st_fix(EEG,fix_start,t_blue_ori);
+t_f_blue = find_1st_fix(fix_start,t_blue_ori);
 for i = 1:length(t_f_blue)
     if ~isnan(t_f_blue(i))
         len_event = length(EEG.event);
