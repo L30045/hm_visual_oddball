@@ -36,6 +36,10 @@ for i = 1:nb_subj
     if strcmp(ev_name,'fix')
         [~, rm_idx_fix_std] = my_rmbase(cond_struct.std_epoch, cond_struct.fix_std, cond_struct.event_time.fixStd_time, tarCh, rm_thres);
         [~, rm_idx_fix_dev] = my_rmbase(cond_struct.dev_epoch, cond_struct.fix_dev, cond_struct.event_time.fixDev_time, tarCh, rm_thres);
+%         keep_std = ~isnan(rm_idx_fix_std);
+%         keep_dev = ~isnan(rm_idx_fix_dev);
+%         rm_idx_fix_std = rm_idx_fix_std|((cond_struct.event_time.fixStd_time(keep_std) - cond_struct.event_time.std_time(keep_std)) > 1000);
+%         rm_idx_fix_dev = rm_idx_fix_dev|((cond_struct.event_time.fixDev_time(keep_dev) - cond_struct.event_time.dev_time(keep_dev)) > 1000);
         cond_struct.fix_std = pop_rejepoch(cond_struct.fix_std,rm_idx_fix_std,0);
         cond_struct.fix_dev = pop_rejepoch(cond_struct.fix_dev,rm_idx_fix_dev,0);
     elseif strcmp(ev_name, 'grab')

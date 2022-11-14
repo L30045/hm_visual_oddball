@@ -1336,77 +1336,111 @@ legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
 
 %% THE NUMBER OF FIXATION TRIAL DOES NOT MATCH WITH GIP TRIALS AND GIP ONSET TIME IS OVERLAPED WITH GRAB EVENT INSTEAD OF "LEFT"
 % extract event timing from stimulus lock epoch
-ev_name = 'triangle_fix_start';
-stim_epoch = output{1}.dev_epoch;
-% get event latency
-gip_idx = cellfun(@(x) find(cellfun(@(y) ismember(y,{'Up','Bottom','Left','Right'}),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
-fix_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,ev_name),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
-rm_idx = cellfun(@isempty, gip_idx)|cellfun(@isempty,fix_idx);
-if strcmp(ev_name, 'circle_fix_start')
-    grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'grab'),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
-    rm_idx = rm_idx|cellfun(@isempty, grab_idx);
-    grab_idx = grab_idx(~rm_idx);
-    grab_t = zeros(1,length(grab_idx));
-end
-gip_idx = gip_idx(~rm_idx);
-fix_idx = fix_idx(~rm_idx);
-stim_epoch = pop_rejepoch(stim_epoch,rm_idx,0);
-% find time
+plt_t_lib = cell(2,2);
+for cond_i = 1:2
+    for ev_i = 1:2
+        if ev_i== 1
+            ev_name = 'circle_fix_start';
+            stim_epoch = merged_lib{cond_i}.std_epoch;
+        else
+            ev_name = 'triangle_fix_start';
+            stim_epoch = merged_lib{cond_i}.dev_epoch;
+        end
+        % get event latency
+        gip_idx = cellfun(@(x) find(cellfun(@(y) ismember(y,{'Up','Bottom','Left','Right'}),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+        fix_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,ev_name),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+        rm_idx = cellfun(@isempty, gip_idx)|cellfun(@isempty,fix_idx);
+        if strcmp(ev_name, 'circle_fix_start')
+            grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'grab'),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+            rm_idx = rm_idx|cellfun(@isempty, grab_idx);
+            grab_idx = grab_idx(~rm_idx);
+            grab_t = zeros(1,length(grab_idx));
+        else
+            grab_t = [];
+        end
+        gip_idx = gip_idx(~rm_idx);
+        fix_idx = fix_idx(~rm_idx);
+        stim_epoch = pop_rejepoch(stim_epoch,rm_idx,0);
+        % find time
 
-gip_t =  zeros(1,length(gip_idx));
-fix_t =  zeros(1,length(gip_idx));
-for ev_i = 1:length(gip_idx)
-    if strcmp(ev_name, 'circle_fix_start')
-        grab_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{grab_idx{ev_i}}; % ms
+        gip_t =  zeros(1,length(gip_idx));
+        fix_t =  zeros(1,length(gip_idx));
+        for i = 1:length(gip_idx)
+            if strcmp(ev_name, 'circle_fix_start')
+                grab_t(i) = stim_epoch.epoch(i).eventlatency{grab_idx{i}}; % ms
+            end
+            gip_t(i) = stim_epoch.epoch(i).eventlatency{gip_idx{i}}; % ms
+            fix_t(i) = stim_epoch.epoch(i).eventlatency{fix_idx{i}}; % ms
+        end
+        plt_t_lib{cond_i,ev_i} = {gip_t,fix_t,grab_t};
     end
-    gip_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{gip_idx{ev_i}}; % ms
-    fix_t(ev_i) = stim_epoch.epoch(ev_i).eventlatency{fix_idx{ev_i}}; % ms
-end
-% extract data
-tarCh = 'Cz';
-srate = stim_epoch.srate;
-ch_idx = ismember({stim_epoch.chanlocs.labels},tarCh);
-plt_data = squeeze(stim_epoch.data(ch_idx,:,:));
-lock_name = 'fix';
-switch lock_name
-    case 'gip'
-        lock_t = gip_t;
-    case 'fix'
-        lock_t = fix_t;
-    case 'grab'
-        lock_t = grab_t;
-end
-% arrange data timing
-len_epoch = [-500 1000];
-align_epoch = nan(diff(len_epoch)/1000*srate,size(plt_data,2));
-epoch_center = abs(len_epoch(1))/1000*srate;
-ev_start = max(round((lock_t-len_epoch(1))/1000*srate),1);
-ev_end = min(round((lock_t+len_epoch(2))/1000*srate),size(plt_data,1));
-for ev_i = 1:size(plt_data,2)
-    extract_data =  plt_data(:,ev_i);
-    ev_lock = round(lock_t(ev_i)/1000*srate);
-    ev_start = max(round((lock_t(ev_i)+len_epoch(1))/1000*srate),1);
-    ev_end = min(round((lock_t(ev_i)+len_epoch(2))/1000*srate),size(plt_data,1));
-    % after ev
-    len_after = ev_end-ev_lock;
-    align_epoch(epoch_center:epoch_center+len_after,ev_i) = extract_data(ev_lock:ev_end);
-    % before ev
-    len_before = ev_lock-ev_start;
-    align_epoch((epoch_center-len_before+1):epoch_center-1,ev_i) = extract_data(ev_start+1:ev_lock-1);
 end
 
-% sort
-ev_sort = grab_t-gip_t;
-[~,sort_idx] = sort(ev_sort);
+%% investigate event timing for merged condition
+savepath = 'D:\Research\oddball_fig\xSubj\event latency\';
+plt_func = @mean;
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+ax_lib = cell(2,2);
+for cond_i = 1:2
+    switch cond_i
+        case 1
+            cond_name = 'noHm';
+            t_name = 'Eye-shifting';
+        case 2
+            cond_name = 'Hm';
+            t_name = 'Head-turning';
+    end
+    % std
+    gip_t_std = plt_t_lib{cond_i,1}{1};
+    fix_t_std = plt_t_lib{cond_i,1}{2};
+    grab_t_std = plt_t_lib{cond_i,1}{3};
+    [f_gip_std, xi_gip_std] = ksdensity(gip_t_std);
+    [f_fix_std, xi_fix_std] = ksdensity(fix_t_std);
+    [f_grab_std, xi_grab_std] = ksdensity(grab_t_std);
+    % dev
+%     gip_t_dev= plt_t_lib{cond_i,2}{1};
+%     fix_t_dev = plt_t_lib{cond_i,2}{2};
+%     [f_gip_dev, xi_gip_dev] = ksdensity(gip_t_dev);
+%     [f_fix_dev, xi_fix_dev] = ksdensity(fix_t_dev);
+    % max
+    [~, mi] = max(f_gip_std);
+    max_gip_std = xi_gip_std(mi);
+    [~, mi] = max(f_fix_std);
+    max_fix_std = xi_fix_std(mi);
+    [~, mi] = max(f_grab_std);
+    max_grab_std = xi_grab_std(mi);
+    [~, mi] = max(f_gip_dev);
+    max_gip_dev = xi_gip_dev(mi);
+    [~, mi] = max(f_fix_dev);
+    max_fix_dev = xi_fix_dev(mi);
 
-% figure
-% h = pcolor([align_epoch(:,sort_idx),nan(375,1);nan(1,181)]');
-% set(h,'edgecolor','none')
-plt_t = len_epoch(1)+(1000/srate):(1000/srate):len_epoch(2);
-figure
-shadedErrorBar(plt_t,align_epoch',shaded_method)
-grid on
-title(lock_name)
+    ax = subplot(2,1,cond_i);
+%     title(ax1, sprintf('%s',t_name));
+    plot(xi_grab_std, f_grab_std, 'g-', 'DisplayName',sprintf('Response (mean = %dms)',round(max_grab_std)),'linewidth',3);
+    hold on
+    grid on
+    plot(xi_fix_std, f_fix_std, 'r-', 'DisplayName',sprintf('Fix (mean = %dms)',round(max_fix_std)),'linewidth',3);
+    plot(xi_gip_std, f_gip_std, 'b-', 'DisplayName',sprintf('GIP (mean = %dms)',round(max_gip_std)),'linewidth',3);
+%     plot(xi_gip_dev, f_gip_dev, 'b--', 'DisplayName',sprintf('GIP Standard (mean = %dms)',round(max_gip_dev)),'linewidth',3);
+%     plot(xi_fix_dev, f_fix_dev, 'r--', 'DisplayName',sprintf('Fix Standard (mean = %dms)',round(max_fix_dev)),'linewidth',3);
+    
+    
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    set(gca,'fontsize',20)
+    ylabel('Probability')
+
+    ax_lib{cond_i} = ax;
+end
+set(gca,'fontsize',20)
+set(gcf,'color','w')
+xlabel('Time (ms)')
+linkaxes([ax_lib{:}],'x')
+fig.Units = 'centimeters';
+fig.PaperUnits = 'centimeters';
+fig.PaperSize = fig.Position(3:4);
+saveas(fig, sprintf('%sevent_onset.png',savepath));
+saveas(fig, sprintf('%sevent_onset.pdf',savepath));
+
 
 % IT SEEMS THAT EPOCH_EZ DOES NOT ASSIGN THE CORRECT EVENT MARKER.
 %% check epoch_lib one by one
@@ -1423,3 +1457,142 @@ for i = 1:length(epoch_lib(:))
     check_equal(i) = any(plt_diff1==0);
 end
 
+%% Single subject analysis
+saveFigPath = 'D:\Research\oddball_fig\';
+if ~exist(saveFigPath,'dir')
+    mkdir(saveFigPath)
+end
+tarCh = {'Cz','CPz','POz','O2'};
+rm_thres = 30;
+filepath = '//hoarding/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+subj_list = {dir([filepath, 'rmPreStim*']).name};
+
+
+for subj_i = 1:size(epoch_lib,2)
+    subj_savepath = sprintf('%s%s/',saveFigPath,subj_list{subj_i}(1:end-4));
+    if ~exist(subj_savepath,'dir')
+        mkdir(subj_savepath)
+    end
+    for cond_i = 1:2
+        switch cond_i
+            case 1
+                cond_savepath = sprintf('%snoHm/',subj_savepath);
+                cond_name = 'noHm';
+            case 2
+                cond_savepath = sprintf('%sHm/',subj_savepath);
+                cond_name = 'Hm';
+        end
+        if ~exist(cond_savepath,'dir')
+            mkdir(cond_savepath)
+        end 
+        % get data
+        tmp_epoch = my_rmEpoch(epoch_lib{cond_i,subj_i});
+        std_epoch = tmp_epoch.std_epoch;
+        dev_epoch = tmp_epoch.dev_epoch;
+        gip_std = tmp_epoch.gip_std;
+        gip_dev= tmp_epoch.gip_dev;
+        
+        for ch_i = 1:length(tarCh)
+            ch_savepath = sprintf('%s%s/',cond_savepath,tarCh{ch_i});
+            if ~exist(ch_savepath,'dir')
+                mkdir(ch_savepath)
+            end 
+            %=================
+            % remove trial with bad baseline
+            [rm_idx_stim, rm_idx_gip] = my_rmbase(std_epoch, gip_std, tmp_epoch.event_time.gipStd_time,...
+                                                  tarCh{ch_i}, rm_thres);
+            std_epoch = pop_rejepoch(std_epoch,rm_idx_stim,0);
+            gip_std = pop_rejepoch(gip_std,rm_idx_gip,0);
+            [rm_idx_stim, rm_idx_gip] = my_rmbase(dev_epoch, gip_dev, tmp_epoch.event_time.gipDev_time,...
+                                                  tarCh{ch_i}, rm_thres);
+            dev_epoch = pop_rejepoch(dev_epoch,rm_idx_stim,0);
+            gip_dev = pop_rejepoch(gip_dev,rm_idx_gip,0);
+            %=================
+            % plot ERP
+            % stim lock
+            shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+            fig = plt_erp(std_epoch,dev_epoch,tarCh{ch_i},'stim',shaded_method);
+            saveas(fig, sprintf('%serp_%s_stim_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            % GIP lock
+            shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+            fig = plt_erp(gip_std,gip_dev,tarCh{ch_i},'gip',shaded_method);
+            saveas(fig, sprintf('%serp_%s_gip_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            %=================
+            % plot ERSP
+            % stim lock, circle trial
+            smoothing = 1;
+            fig = plt_ersp(std_epoch,tarCh{ch_i},'stim','cir',smoothing);
+            saveas(fig, sprintf('%sersp_%s_stim_cir_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            % stim lock, triangle trial
+            fig = plt_ersp(dev_epoch,tarCh{ch_i},'stim','tri',smoothing);
+            saveas(fig, sprintf('%sersp_%s_stim_tri_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            % gip lock, circle trial
+            fig = plt_ersp(gip_std,tarCh{ch_i},'gip','cir',smoothing);
+            saveas(fig, sprintf('%sersp_%s_gip_cir_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            % gip lock, triangle trial
+            fig = plt_ersp(gip_dev,tarCh{ch_i},'gip','tri',smoothing);
+            saveas(fig, sprintf('%sersp_%s_gip_tri_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            %=================
+            % plot ERP diff
+            % stim lock
+            fig = plt_erp_diff(std_epoch,dev_epoch,tarCh{ch_i},'stim');
+            saveas(fig, sprintf('%serpDiff_%s_stim_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+            % GIP lock
+            fig = plt_erp_diff(gip_std,gip_dev,tarCh{ch_i},'gip');
+            saveas(fig, sprintf('%serpDiff_%s_gip_%s.png',ch_savepath,cond_name, tarCh{ch_i}));
+            close(fig)
+        end
+    end
+end
+            
+%% plot ERP for left and right
+tarCh = 'Cz';
+lock_name = 'fix';
+cond_name = 'Hm';
+
+merge_cir = [];
+merge_tri = [];
+for subj_i = 1:size(epoch_lib,2)
+    switch cond_name
+        case 'noHm'
+            cond_i = 1;
+        case 'Hm'
+            cond_i = 2;
+    end
+    switch lock_name
+        case 'stim'
+            plt_EEG_cir = epoch_lib{cond_i,subj_i}.std_epoch;
+            plt_EEG_tri = epoch_lib{cond_i,subj_i}.dev_epoch;
+        case 'gip'
+            plt_EEG_cir = epoch_lib{cond_i,subj_i}.gip_std;
+            plt_EEG_tri = epoch_lib{cond_i,subj_i}.gip_dev;
+        case 'fix'
+            plt_EEG_cir = epoch_lib{cond_i,subj_i}.fix_std;
+            plt_EEG_tri = epoch_lib{cond_i,subj_i}.fix_dev;
+    end
+    plt_EEG_cir = pop_select(plt_EEG_cir,'channel',{tarCh});
+    plt_EEG_tri = pop_select(plt_EEG_tri,'channel',{tarCh});
+    % preserve trial
+    rm_idx_cir = epoch_lib{cond_i,subj_i}.event_time.std_up | epoch_lib{cond_i,subj_i}.event_time.std_down;
+    rm_idx_tri = epoch_lib{cond_i,subj_i}.event_time.dev_up | epoch_lib{cond_i,subj_i}.event_time.dev_down;
+    plt_EEG_cir = pop_rejepoch(plt_EEG_cir, rm_idx_cir, 0);
+    plt_EEG_tri = pop_rejepoch(plt_EEG_tri, rm_idx_tri, 0);
+    if isempty(merge_cir)
+        merge_cir = plt_EEG_cir;
+        merge_tri = plt_EEG_tri;
+    else
+        merge_cir = pop_mergeset(merge_cir, plt_EEG_cir);
+        merge_tri = pop_mergeset(merge_tri, plt_EEG_tri);
+    end
+end
+
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+% shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan'))};
+fig = plt_erp(merge_cir,merge_tri,tarCh,lock_name,shaded_method);
