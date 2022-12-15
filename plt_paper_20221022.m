@@ -20,7 +20,7 @@ subplot_lib = cell(1,6);
 count = 1;
 for cond_name = {'noHm','Hm'}
     for ev_name = {'stim','gip','fix'}
-        for tarCh = {'O2'}
+        for tarCh = {'Cz'}
 %             loc_path = sprintf('%s%s/',savepath,tarCh{:});
             loc_path = 'C:\Users\Yuan\OneDrive\Desktop\graduate!\fig\vr\';
             if ~exist(loc_path,'dir')
@@ -53,7 +53,7 @@ ev_name = {'stim','stim','gip','gip','fix','fix'};
 fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
 plt_time_idx = [-500 1000];
 ax_lib = cell(1,6);
-for p_i = 1:6
+for p_i = 1:3
     ax_lib{p_i} = subplot(3,2,p_i);
     plt_t = plt_lib{p_i}{1};
     plt_idx = plt_t >= plt_time_idx(1) & plt_t<=plt_time_idx(2);
