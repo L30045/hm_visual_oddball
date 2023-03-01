@@ -25,14 +25,14 @@ ev_idx = nan(size(tar_t));
 for i = 1:length(tar_t)-1
     % find the first event after 
     f_idx = find(ev_start_t>tar_t(i),1);
-    % find the previous event
-    b_idx = f_idx-1;
-    % check if previous event cover target time point
-    if b_idx>0 && ev_end_t(b_idx)>tar_t(i)
-        f_idx = b_idx;
-    end
     % check if event exist
     if ~isempty(ev_start_t(f_idx))
+        % find the previous event
+        b_idx = f_idx-1;
+        % check if previous event cover target time point
+        if b_idx>0 && ev_end_t(b_idx)>tar_t(i)
+            f_idx = b_idx;
+        end
         % check if event happens after next target point and duration.
         if ev_start_t(f_idx) < tar_t(i+1) && abs(ev_start_t(f_idx)-tar_t(i))<=t_threshold
             ev_idx(i) = ev_start_t(f_idx);
@@ -42,14 +42,14 @@ end
 % last event
 % find the first event after 
 f_idx = find(ev_start_t>tar_t(end),1);
-% find the previous event
-b_idx = f_idx-1;
-% check if previous event cover target time point
-if b_idx>0 && ev_end_t(b_idx)>tar_t(end)
-    f_idx = b_idx;
-end
 % check if event exist
 if ~isempty(ev_start_t(f_idx))
+    % find the previous event
+    b_idx = f_idx-1;
+    % check if previous event cover target time point
+    if b_idx>0 && ev_end_t(b_idx)>tar_t(end)
+        f_idx = b_idx;
+    end
     % check duration
     if abs(ev_start_t(f_idx)-tar_t(end))<=t_threshold
         ev_idx(end) = ev_start_t(f_idx);
