@@ -4,10 +4,12 @@ plt_t = cir_epoch.times;
 cir_data = squeeze(cir_epoch.data(ch_idx,:,:))';
 tri_data = squeeze(tri_epoch.data(ch_idx,:,:))';
 
-[~,p] = ttest2(cir_data,tri_data);
-[~,plt_p] = bonf_holm(p);
+% [~,p] = ttest2(cir_data,tri_data);
+% [~,plt_p] = bonf_holm(p);
 % plt_p = p<=0.05/sqrt(size(cir_data,2));
-% plt_p = p<=0.05;
+p = rowfun(@ranksum,table(cir_data',tri_data'));
+p = p{:,:}';
+plt_p = p<=(0.05/length(p));
 
 % plot ERP
 fig = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -18,11 +20,12 @@ ht.patch.FaceAlpha = 0.1;
 grid on
 hold on
 % >> Circle
+disp(size(cir_data))
 hc = shadedErrorBar(plt_t, cir_data, shaded_method,'lineprops',...
     {'color','r','linewidth',3,'DisplayName','Deviant'});
 hc.patch.FaceAlpha = 0.1;
 % sig
-plot(plt_t(plt_p), mean(cir_data(:,plt_p),1), 'ro','linewidth',3,'markersize',15)
+plot(plt_t(plt_p), shaded_method{1}(cir_data(:,plt_p)), 'kx','linewidth',3,'markersize',15)
 
 xline(0,'k-','DisplayName',ev_name,'linewidth',3)
 legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')

@@ -40,7 +40,7 @@ parfor j = 1:length(subj_list)
         % rereference
         EEG = pop_reref(EEG,{'M1','M2'});
         % Add channel location    
-        EEG = pop_chanedit(EEG, 'lookup',[eegpath,'plugins/dipfit/standard_BEM/elec/standard_1005.elc']); % MNI
+        EEG = pop_chanedit(EEG, 'lookup','D:\Research\eeglab\plugins/dipfit/standard_BEM/elec/standard_1005.elc'); % MNI
         % re-center channel location
         EEG = pop_chanedit(EEG, 'eval','chans = pop_chancenter( chans, [],[]);');
 

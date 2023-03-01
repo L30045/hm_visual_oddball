@@ -1,4 +1,4 @@
-function [fig,varargout] = plt_erp_meanXsubj(epoch_lib, cond_name, ev_name, tarCh, thres_time, rm_thres, shaded_method)
+function [fig,varargout] = plt_erp_meanXsubj(epoch_lib, cond_name, ev_name, tarCh, thres_time, rm_thres, shaded_method, is_plot)
 nb_subj = size(epoch_lib,2);
 len_stim = size(epoch_lib{1}.std_epoch.data,2);
 len_gip = size(epoch_lib{1}.gip_std.data,2);
@@ -76,29 +76,33 @@ for i = 1:nb_subj
     end
 end
 
-% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
-% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
-fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
-% >> Triangle
-if ~isempty(tri_epoch)
-    ht = shadedErrorBar(plt_t, tri_lib, shaded_method,'lineprops',...
-        {'color','b','linewidth',3,'DisplayName','Standard'});
-    ht.patch.FaceAlpha = 0.1;
+if is_plot
+    % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
+    % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
+    fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+    % >> Triangle
+    if ~isempty(tri_epoch)
+        ht = shadedErrorBar(plt_t, tri_lib, shaded_method,'lineprops',...
+            {'color','b','linewidth',3,'DisplayName','Standard'});
+        ht.patch.FaceAlpha = 0.1;
+    end
+    grid on
+    hold on
+    % >> Circle
+    hc = shadedErrorBar(plt_t, cir_lib, shaded_method,'lineprops',...
+        {'color','r','linewidth',3,'DisplayName','Deviant'});
+    hc.patch.FaceAlpha = 0.1;
+    xline(0,'k-','DisplayName',sprintf('%s onset',ev_name),'linewidth',3)
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
+    set(gca,'fontsize',30)
+    set(gcf,'color',[1 1 1])
+    set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
+    xlabel('Time (ms)')
+    ylabel('Amplitude (\muV)')
+    % title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh))
+else
+    fig = [];
 end
-grid on
-hold on
-% >> Circle
-hc = shadedErrorBar(plt_t, cir_lib, shaded_method,'lineprops',...
-    {'color','r','linewidth',3,'DisplayName','Deviant'});
-hc.patch.FaceAlpha = 0.1;
-xline(0,'k-','DisplayName',sprintf('%s onset',ev_name),'linewidth',3)
-legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')
-set(gca,'fontsize',30)
-set(gcf,'color',[1 1 1])
-set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
-xlabel('Time (ms)')
-ylabel('Amplitude (\muV)')
-% title(sprintf('%s lock - %s (%s)', ev_name, cond_name, tarCh))
 
 varargout{1} = plt_t;
 varargout{2} = cir_lib;

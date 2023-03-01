@@ -1,7 +1,7 @@
 %% plot for paper
 filepath = 'D:\Research\';
 % load([filepath,'behav_lib_20221022.mat']);
-load([filepath,'epoch_lib_rmPreStim.mat']);
+load([filepath,'epoch_lib_rmPreStim_new.mat']);
 % filepath = '//hoarding/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
 % subj_list = {dir([filepath, 'rmPreStim*']).name};
 subj_list = 1:14;
@@ -9,35 +9,36 @@ subj_list = 1:14;
 % print_multi([saveFigPath,'v_fig1_',tName],{'pdf'})
 
 %% plot the mean of mean ERP across subject
+plt_epoch_lib = epoch_lib;
 thres_time = [100 1000];
 rm_thres = 30;
-nb_subj = size(epoch_lib,2);
-shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
-% shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+nb_subj = size(plt_epoch_lib,2);
+% shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
+shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
 savepath = 'D:\Research\oddball_fig\xSubj\mean ERP\';
 
 subplot_lib = cell(1,6);
 count = 1;
 for cond_name = {'noHm','Hm'}
     for ev_name = {'stim','gip','fix'}
-        for tarCh = {'Cz'}
+        for tarCh = {'CPz'}
 %             loc_path = sprintf('%s%s/',savepath,tarCh{:});
-            loc_path = 'C:\Users\Yuan\OneDrive\Desktop\graduate!\fig\vr\';
-            if ~exist(loc_path,'dir')
-                mkdir(loc_path)
-            end
-            [fig,plt_t,cir_lib,tri_lib] = plt_erp_meanXsubj(epoch_lib, cond_name{:}, ev_name{:}, tarCh{:}, thres_time, rm_thres,shaded_method);
+%             loc_path = 'C:\Users\Yuan\OneDrive\Desktop\graduate!\fig\vr\';
+%             if ~exist(loc_path,'dir')
+%                 mkdir(loc_path)
+%             end
+            [fig,plt_t,cir_lib,tri_lib] = plt_erp_meanXsubj(plt_epoch_lib, cond_name{:}, ev_name{:}, tarCh{:}, thres_time, rm_thres,shaded_method, false);
             % for printing PDF
-            set(gca,'units','centimeters')
-            pos = get(gca,'Position');
-            ti = get(gca,'TightInset');
-            set(gcf, 'PaperUnits','centimeters');
-            set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-            set(gcf, 'PaperPositionMode', 'manual');
-            set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-%             saveas(fig, sprintf('%serp_%s_%s_%s.png',loc_path,cond_name{:},ev_name{:},tarCh{:}));
-%             saveas(fig, sprintf('%serp_%s_%s_%s.pdf',loc_path,cond_name{:},ev_name{:},tarCh{:}));
-            close(fig)
+%             set(gca,'units','centimeters')
+%             pos = get(gca,'Position');
+%             ti = get(gca,'TightInset');
+%             set(gcf, 'PaperUnits','centimeters');
+%             set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+%             set(gcf, 'PaperPositionMode', 'manual');
+%             set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+% %             saveas(fig, sprintf('%serp_%s_%s_%s.png',loc_path,cond_name{:},ev_name{:},tarCh{:}));
+% %             saveas(fig, sprintf('%serp_%s_%s_%s.pdf',loc_path,cond_name{:},ev_name{:},tarCh{:}));
+%             close(fig)
             subplot_lib{count} = {plt_t, cir_lib, tri_lib};
             count = count+1;
         end
@@ -53,7 +54,7 @@ ev_name = {'stim','stim','gip','gip','fix','fix'};
 fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
 plt_time_idx = [-500 1000];
 ax_lib = cell(1,6);
-for p_i = 1:3
+for p_i = 1:6
     ax_lib{p_i} = subplot(3,2,p_i);
     plt_t = plt_lib{p_i}{1};
     plt_idx = plt_t >= plt_time_idx(1) & plt_t<=plt_time_idx(2);
@@ -62,10 +63,8 @@ for p_i = 1:3
     tri_lib = plt_lib{p_i}{3}(:,plt_idx);
     
     [~, p] = ttest(tri_lib,cir_lib);
-    [corrected_p, h] = bonf_holm(p);
-%     h = p <= 0.05/sqrt(length(p));
-%     h = p <= 0.05;
-%     h2 = p <= 0.1;
+%     [corrected_p, h] = bonf_holm(p);
+    h = p <= 0.05;
     
     ht = shadedErrorBar(plt_t, tri_lib, shaded_method,'lineprops',...
         {'color','b','linewidth',3,'DisplayName','Standard'});
@@ -79,7 +78,7 @@ for p_i = 1:3
 %     xline(0,'k-','DisplayName',sprintf('%s onset',ev_name{p_i}),'linewidth',3)
     xline(0,'k-','DisplayName','Event onset','linewidth',3)
 %     plot(plt_t(h2), mean(cir_lib(:,h2)), 'gx','linewidth',2,'markersize',15);
-    plot(plt_t(h), mean(cir_lib(:,h)), 'kx','linewidth',2,'markersize',15);
+%     plot(plt_t(h), mean(cir_lib(:,h)), 'kx','linewidth',2,'markersize',15);
     set(gca,'fontsize',15)
     set(gcf,'color',[1 1 1])
     set(gca,'xtick',round(plt_t(1):100:plt_t(end)))
@@ -103,20 +102,43 @@ savespath = 'D:\Research\oddball_fig\xSubj\mean ERP\';
 % saveas(fig, sprintf('%smeanERP_O2.png',savepath));
 % saveas(fig, sprintf('%smeanERP_O2.pdf',savepath));
 
+%% anova p300
+ev_name = {'stim','stim','gip','gip','fix','fix'};
+cond_name = {'noHm','Hm'};
+sig_name = {'noSig','Sig'};
+for p_i = 6
+    ax_lib{p_i} = subplot(3,2,p_i);
+    plt_t = plt_lib{p_i}{1};
+    plt_idx = plt_t >= plt_time_idx(1) & plt_t<=plt_time_idx(2);
+    plt_t = plt_t(plt_idx);
+    cir_lib = plt_lib{p_i}{2}(:,plt_idx);
+    tri_lib = plt_lib{p_i}{3}(:,plt_idx);
+    
+    % extract amplitude around 300 ms
+    p3_idx = plt_t>=250 & plt_t<=350;
+    tri_p3 = mean(tri_lib(:,p3_idx),2);
+    cir_p3 = mean(cir_lib(:,p3_idx),2);
+    p = anova1([cir_p3,tri_p3]);
+    
+    title(sprintf('%s - %s (%s)',ev_name{p_i},cond_name{mod(p_i-1,2)+1}),sig_name{(p<=0.05)+1})
+    
+end
+
 
 %% calculate behavior
-behav_lib_ori = cell(size(epoch_lib));
+behav_lib_ori = cell(size(epoch_lib(:,1:8)));
 for subj_i = 1:size(behav_lib_ori,2)
     for cond_i = 1:2
         behav_lib_ori{cond_i,subj_i} = cal_behav(epoch_lib{cond_i,subj_i});
     end
 end
-        
+disp('Done')
 
 %% plot behavior
 behav_lib = behav_lib_ori;
+plt_epoch_lib = epoch_lib(:,1:8);
 % avoid outlier near the edges
-rm_edge = round(100*0.001*epoch_lib{1}.std_epoch.srate); % sample points
+rm_edge = round(100*0.001*plt_epoch_lib{1}.std_epoch.srate); % sample points
 % [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
 % behav_lib = behav_lib_ori(:,sum_fix_subj_idx==2);
 % savepath = 'D:\Research\oddball_fig\xSubj\behav\';
@@ -146,21 +168,21 @@ for ev_name_loop = {'std','dev'}
                     trial_name = 'TRI';
                     l_i = 2;
             end
-            [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
+            [fix_subj_idx, grab_subj_idx] = find_if_device(plt_epoch_lib);
             fix_subj_idx = sum(fix_subj_idx)==2;
             grab_subj_idx = sum(grab_subj_idx)==2;
             switch lock_name
                 case 'stim'
                     epoch_name = sprintf('%s_epoch',ev_name);
-                    plt_t = epoch_lib{1}.dev_epoch.times;
+                    plt_t = plt_epoch_lib{1}.dev_epoch.times;
                     include_subj = true(1,size(behav_lib,2));
                 case 'gip'
                     epoch_name = sprintf('gip_%s',ev_name);
-                    plt_t = epoch_lib{1}.gip_dev.times;
+                    plt_t = plt_epoch_lib{1}.gip_dev.times;
                     include_subj = true(1,size(behav_lib,2));
                 case 'fix'
                     epoch_name = sprintf('fix_%s',ev_name);
-                    plt_t = epoch_lib{1}.gip_dev.times;
+                    plt_t = plt_epoch_lib{1}.gip_dev.times;
                     include_subj = fix_subj_idx;
             end
             % head 
@@ -190,7 +212,7 @@ for ev_name_loop = {'std','dev'}
             plt_g_a = plt_g_a(rm_edge:end-rm_edge,:);
             plt_g_ad = plt_g_ad(rm_edge:end-rm_edge,:);
             plt_dist_ori = plt_dist_ori(rm_edge:end-rm_edge,:);
-            shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(size(epoch_lib,2)))};
+            shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(size(plt_epoch_lib,2)))};
 %             shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
             my_norm = @(x)((x-min(x,[],1))./(max(x,[],1)-min(x,[],1)));
 
@@ -258,10 +280,10 @@ for ev_name_loop = {'std','dev'}
 end
 
 %% plot above figure into a big subplot
-ylabel_name = 'Angular (deg/s)';
-% ylabel_name = 'Angle (deg)';
-plt_lib_std = reshape(reshape(v_ang_lib(1,:),3,2)',[],1); % for 3 by 2 subplot
-plt_lib_dev = reshape(reshape(v_ang_lib(2,:),3,2)',[],1); % for 3 by 2 subplot
+% ylabel_name = 'Angular (deg/s)';
+ylabel_name = 'Angle (deg)';
+plt_lib_std = reshape(reshape(ang_lib(1,:),3,2)',[],1); % for 3 by 2 subplot
+plt_lib_dev = reshape(reshape(ang_lib(2,:),3,2)',[],1); % for 3 by 2 subplot
 % plt_lib = subplot_lib; % for 2 by 3 subplot
 ev_name = {'stim','stim','gip','gip','fix','fix'};
 fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
@@ -280,8 +302,8 @@ for p_i = 1:6
     shadedErrorBar(plt_t,plt_e_a', shaded_method, 'lineprops',{'b-','DisplayName','Eye','linewidth',3});
     grid on; hold on;
     shadedErrorBar(plt_t,plt_h_a', shaded_method, 'lineprops',{'r-','DisplayName','Head','linewidth',3})
-    shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','Gaze','linewidth',3})
-    shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','Dist.','linewidth',3})
+%     shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','Gaze','linewidth',3})
+%     shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','Dist.','linewidth',3})
     xline(0,'k-','linewidth',3,'DisplayName','Event onset');
     set(gca,'fontsize',20)
     set(gcf,'color','w')
@@ -377,12 +399,16 @@ end
 
 
 %% Merge epoch_lib to perform ERPImage using EEGLAB function
-merged_lib = merge_epoch_lib(epoch_lib);
+[fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
+preserve_idx = sum(fix_subj_idx,1)==2;
+merged_lib = merge_epoch_lib(epoch_lib(:,preserve_idx));
+% merged_lib_new = merge_epoch_lib(epoch_lib(:,1:8));
+% merged_lib_old = merge_epoch_lib(epoch_lib(:,9:end));
 
 %% plot ERPImage
 thres_amp = 30;
-savepath = 'D:\Research\oddball_fig\xSubj\ERPImage\new_merged\';
-for tarCh = {'Cz'}
+savepath = 'D:\Research\oddball_fig\xSubj\Biosemi only\ERPImage\';
+for tarCh = {'CPz'}
     loc_path = sprintf('%s%s/',savepath,tarCh{:});
     if ~exist(loc_path,'dir')
         mkdir(loc_path)
@@ -467,7 +493,7 @@ for tarCh = {'Cz'}
 end
 
 %% plot ERP
-tarCh = 'Cz';
+tarCh = 'CPz';
 lock_name = 'stim';
 cond_name = 'noHm';
 switch cond_name
@@ -487,8 +513,9 @@ switch lock_name
         plt_EEG_cir = merged_lib{cond_i}.fix_std;
         plt_EEG_tri = merged_lib{cond_i}.fix_dev;
 end
-shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+% shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
 % shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan'))};
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan')/sqrt(size(x,1)))};
 fig = plt_erp(plt_EEG_cir,plt_EEG_tri,tarCh,lock_name,shaded_method);
 
 %% ttest between condition
@@ -653,20 +680,70 @@ fig.PaperSize = fig.Position(3:4);
 % saveas(fig, sprintf('%sevent_latency_allDir_cir.pdf',savepath));
 % close(fig)
 
+%% scatter plot among fixation, gip, and response
+savepath = 'D:\Research\oddball_fig\xSubj\event latency\';
+plt_func = @mean;
+plt_lib = merged_lib;
+fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
+ax_lib = cell(1,2);
+for cond_i = 1:2
+    switch cond_i
+        case 1
+            cond_name = 'noHm';
+            t_name = 'Eye-shifting';
+        case 2
+            cond_name = 'Hm';
+            t_name = 'Freely-moving';
+    end
+
+    output = find_ev_time(plt_lib{cond_i});
+
+    plt_grab_gip = output.cir.diff_grab_stim - output.cir.diff_gip_stim;
+    plt_grab_fix = output.cir.diff_grab_stim - output.cir.diff_fix_stim;
+    plt_fix_gip = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
+    
+    ax1 = subplot(1,2,cond_i);
+    x = plt_fix_gip;
+    y = plt_grab_fix;
+    [corr_R, corr_p] = corrcoef(x,y);
+    plot(x, y,'bo','DisplayName',sprintf('Corr. = %.3f, p val. = %.3f', corr_R(1,2),corr_p(1,2)),'linewidth',3,'markersize',15);
+    set(gca,'fontsize',20)
+    xlabel('GIP-Fix')
+    ylabel('Response-Fix')
+    title('Latency: GIP-Fix vs Response-Fix')
+    hold on
+    grid on
+    pfit = polyfit(x,y,1);
+    f = polyval(pfit,x);
+    r2 = 1 - sum((y-f).^2)/sum((y-mean(y)).^2);
+    plot(x,f,'k-','DisplayName',sprintf('R^2 = %.3f',r2),'linewidth',3);
+    legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northeast');
+    pbaspect([1 1 1])
+end
+
+fig.Units = 'centimeters';
+fig.PaperUnits = 'centimeters';
+fig.PaperSize = fig.Position(3:4);
+% saveas(fig, sprintf('%sevent_latency_allDir_cir.png',savepath));
+% saveas(fig, sprintf('%sevent_latency_allDir_cir.pdf',savepath));
+% close(fig)
+
 %% investigate event onset timing for merged condition
 plt_t_lib = cell(2,2);
+plt_merged_lib = merged_lib_old;
 for cond_i = 1:2
     for ev_i = 1:2
         if ev_i== 1
             ev_name = 'circle_fix_start';
-            stim_epoch = merged_lib{cond_i}.std_epoch;
+            stim_epoch = plt_merged_lib{cond_i}.std_epoch;
         else
             ev_name = 'triangle_fix_start';
-            stim_epoch = merged_lib{cond_i}.dev_epoch;
+            stim_epoch = plt_merged_lib{cond_i}.dev_epoch;
         end
         % get event latency
-        gip_idx = cellfun(@(x) find(cellfun(@(y) ismember(y,{'Up','Bottom','Left','Right'}),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
-        fix_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,ev_name),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
+        stim_idx = cellfun(@(x) find(cellfun(@(y) ~isempty(regexp(y,'Ring','ONCE')), x)), {stim_epoch.epoch.eventtype}, 'uniformoutput',0);
+        gip_idx = cellfun(@(x,x_stim) find(cellfun(@(y) ismember(y,{'Up','Bottom','Left','Right'}),x(x_stim:end)),1)+x_stim-1, {stim_epoch.epoch.eventtype},stim_idx,'uniformoutput',0);
+        fix_idx = cellfun(@(x,x_stim) find(cellfun(@(y) strcmp(y,ev_name),x(x_stim:end)),1)+x_stim-1, {stim_epoch.epoch.eventtype},stim_idx,'uniformoutput',0);
         rm_idx = cellfun(@isempty, gip_idx)|cellfun(@isempty,fix_idx);
         if strcmp(ev_name, 'circle_fix_start')
             grab_idx = cellfun(@(x) find(cellfun(@(y) strcmp(y,'grab'),x),1), {stim_epoch.epoch.eventtype},'uniformoutput',0);
@@ -678,6 +755,7 @@ for cond_i = 1:2
         end
         gip_idx = gip_idx(~rm_idx);
         fix_idx = fix_idx(~rm_idx);
+        stim_idx = stim_idx(~rm_idx);
         stim_epoch = pop_rejepoch(stim_epoch,rm_idx,0);
         % find time
 
