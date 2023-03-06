@@ -31,10 +31,10 @@ if ~isempty(t_f)
     if (EEG.event(t_f).latency - EEG.event(f_std(end)).latency)/EEG.srate <= 2
         gip_1st(t_f) = true;
     else
-        miss_idx(f_std(i)) = true;
+        miss_idx(f_std(i+1)) = true;
     end
 else
-    miss_idx(f_std(i)) = true;
+    miss_idx(f_std(i+1)) = true;
 end
 
 gip_up_idx = gip_1st & gip_up;
