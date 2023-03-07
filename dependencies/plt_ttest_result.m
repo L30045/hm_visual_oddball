@@ -7,7 +7,7 @@ disp('Done')
 
 %% remove those don't have fixation
 [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
-preserve_idx = sum(fix_subj_idx,1)==2;
+preserve_idx = sum(fix_subj_idx,1)==2 & sum(grab_subj_idx,1)==2;
 
 %% find cross channels
 % Rename channels label
@@ -68,7 +68,7 @@ end
 disp('Done')
 
 %% plot channel ERP
-tar_ch = 'O1';
+tar_ch = 'POz';
 % shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
 tar_ch_idx = ismember(select_ch, tar_ch);

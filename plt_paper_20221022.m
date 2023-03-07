@@ -302,8 +302,8 @@ for p_i = 1:6
     shadedErrorBar(plt_t,plt_e_a', shaded_method, 'lineprops',{'b-','DisplayName','Eye','linewidth',3});
     grid on; hold on;
     shadedErrorBar(plt_t,plt_h_a', shaded_method, 'lineprops',{'r-','DisplayName','Head','linewidth',3})
-%     shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','Gaze','linewidth',3})
-%     shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','Dist.','linewidth',3})
+    shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','Gaze','linewidth',3})
+    shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','Dist.','linewidth',3})
     xline(0,'k-','linewidth',3,'DisplayName','Event onset');
     set(gca,'fontsize',20)
     set(gcf,'color','w')
@@ -400,7 +400,7 @@ end
 
 %% Merge epoch_lib to perform ERPImage using EEGLAB function
 [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
-preserve_idx = sum(fix_subj_idx,1)==2;
+preserve_idx = sum(fix_subj_idx,1)==2 & sum(grab_subj_idx,1)==2;
 merged_lib = merge_epoch_lib(epoch_lib(:,preserve_idx));
 % merged_lib_new = merge_epoch_lib(epoch_lib(:,1:8));
 % merged_lib_old = merge_epoch_lib(epoch_lib(:,9:end));
@@ -494,8 +494,8 @@ end
 
 %% plot ERP
 tarCh = 'CPz';
-lock_name = 'stim';
-cond_name = 'noHm';
+lock_name = 'fix';
+cond_name = 'Hm';
 switch cond_name
     case 'noHm'
         cond_i = 1;
@@ -513,9 +513,9 @@ switch lock_name
         plt_EEG_cir = merged_lib{cond_i}.fix_std;
         plt_EEG_tri = merged_lib{cond_i}.fix_dev;
 end
-% shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)([quantile(x,0.8)-mean(x,'omitnan');mean(x,'omitnan')-quantile(x,0.2)])};
 % shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan'))};
-shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan')/sqrt(size(x,1)))};
+% shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan')/sqrt(size(x,1)))};
 fig = plt_erp(plt_EEG_cir,plt_EEG_tri,tarCh,lock_name,shaded_method);
 
 %% ttest between condition
@@ -730,7 +730,7 @@ fig.PaperSize = fig.Position(3:4);
 
 %% investigate event onset timing for merged condition
 plt_t_lib = cell(2,2);
-plt_merged_lib = merged_lib_old;
+plt_merged_lib = merged_lib;
 for cond_i = 1:2
     for ev_i = 1:2
         if ev_i== 1

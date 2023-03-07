@@ -11,10 +11,9 @@ function ev_idx = find_near_ev(ev_start_t,tar_t)
 
 
 %% Data parsing
-t_threshold = 1000; % If the duration between target time points and
+t_threshold = 2000; % If the duration between target time points and
 % event found is larger than this threshold, discard the event found. (ms)
-if size(ev_start_t,1)==1 || size(ev_start_t,2)==1
-    ev_start_t = reshape(ev_start_t,[],1);
+if size(ev_start_t,2)==1
     ev_end_t = ev_start_t;
 else
     ev_end_t = ev_start_t(:,2);
@@ -23,7 +22,7 @@ end
 % intialize output
 ev_idx = nan(size(tar_t));
 
-for i = 1:length(tar_t)
+for i = 1:length(tar_t)-1
     % find the first event onset after target
     f_idx = find(ev_start_t>tar_t(i),1);
     % find the first event offset after target
@@ -35,11 +34,30 @@ for i = 1:length(tar_t)
             % replace f_idx by b_idx
             f_idx = b_idx;
         end
-        % check if the duration exceed threshold.
-        if abs(ev_start_t(f_idx)-tar_t(i))<=t_threshold
+        % check if event happens after next target point and duration.
+        if ev_start_t(f_idx) < tar_t(i+1) ...
+           && ev_start_t(f_idx) > tar_t(i-1) ...
+           && abs(ev_start_t(f_idx)-tar_t(i))<=t_threshold
             ev_idx(i) = ev_start_t(f_idx);
         end
     end
 end
+% last event
+% find the first event after 
+f_idx = find(ev_start_t>tar_t(end),1);
+% check if event exist
+if ~isempty(ev_start_t(f_idx))
+    % find the previous event
+    b_idx = f_idx-1;
+    % check if previous event cover target time point
+    if b_idx>0 && ev_end_t(b_idx)>tar_t(end)
+        f_idx = b_idx;
+    end
+    % check duration
+    if abs(ev_start_t(f_idx)-tar_t(end))<=t_threshold
+        ev_idx(end) = ev_start_t(f_idx);
+    end
+end
+
 
 end
