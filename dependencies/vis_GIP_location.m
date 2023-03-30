@@ -1,1 +1,0 @@
-%% visualize gip locations
