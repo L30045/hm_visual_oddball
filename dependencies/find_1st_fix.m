@@ -1,4 +1,4 @@
-function fix_1st = find_1st_fix(fix_start,gip_t, stim_t)
+function ev_idx = find_1st_fix(fix_t,gip_t, stim_t)
 % all inputs are in the unit of ms.
 % Input:
 %   fix_start: Start time of events to find (N by 1 array). If (N by 2) array is
@@ -13,8 +13,8 @@ function fix_1st = find_1st_fix(fix_start,gip_t, stim_t)
 %% Data parsing
 t_threshold = 1000; % If the duration between target time points and
 % event found is larger than this threshold, discard the event found. (ms)
-fix_start = reshape(fix_start,[],1);
-fix_end = fix_start(:,2);
+fix_start = fix_t(:,1);
+fix_end = fix_t(:,2);
 
 % intialize output
 ev_idx = nan(size(gip_t));
