@@ -80,7 +80,11 @@ s_EEG = [];
 
 
 %% extract data from eye Gaze stream
-seg_range = s_eyeGaze.segments(1).index_range;
+if length(s_eyeGaze.segments)==1
+    seg_range = s_eyeGaze.segments(1).index_range;
+else
+    seg_range = [s_eyeGaze.segments(1).index_range(1),s_eyeGaze.segments(end).index_range(2)];
+end
 ori_eye_2D_pos = s_eyeGaze.time_series(1:4,seg_range(1):seg_range(2)); % left_xy, right_xy
 ori_eye_3D_pos = s_eyeGaze.time_series(5:10,seg_range(1):seg_range(2)); % left_xyz, right_xyz
 ori_gip_3D_pos = s_eyeGaze.time_series(11:13,seg_range(1):seg_range(2));

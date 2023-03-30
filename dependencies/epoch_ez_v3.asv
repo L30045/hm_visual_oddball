@@ -273,7 +273,7 @@ end
 % find the first fixation after stimulus
 % find out stimulus onset time
 fixStd_time = find_1st_fix([fix_start',fix_end'],gipStd_time,std_time); % fixation time, nan if missing % msec
-fixDev_time = find_1st_fix([fix_start',fix_end'],gipDev_time,dev_time); % msec
+fixDev_time = find_1st_fix([fix_start',fix_end'],gipDev_time); % msec
 
 for i = 1:length(fixStd_time)
     if ~isnan(fixStd_time(i))
@@ -303,7 +303,7 @@ for i = 1:length(fixDev_time)
     end
 end
 
-t_f_blue = find_near_ev(fix_start,blue_time);
+t_f_blue = find_1st_fix(fix_start,blue_time);
 for i = 1:length(t_f_blue)
     if ~isnan(t_f_blue(i))
         len_event = length(EEG.event);

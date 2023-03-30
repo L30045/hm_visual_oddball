@@ -126,17 +126,16 @@ end
 
 
 %% calculate behavior
-behav_lib_ori = cell(size(epoch_lib(:,1:8)));
+behav_lib_ori = cell(size(plt_epoch_lib));
 for subj_i = 1:size(behav_lib_ori,2)
     for cond_i = 1:2
-        behav_lib_ori{cond_i,subj_i} = cal_behav(epoch_lib{cond_i,subj_i});
+        behav_lib_ori{cond_i,subj_i} = cal_behav(plt_epoch_lib{cond_i,subj_i});
     end
 end
 disp('Done')
 
 %% plot behavior
 behav_lib = behav_lib_ori;
-plt_epoch_lib = epoch_lib(:,1:8);
 % avoid outlier near the edges
 rm_edge = round(100*0.001*plt_epoch_lib{1}.std_epoch.srate); % sample points
 % [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
@@ -280,10 +279,10 @@ for ev_name_loop = {'std','dev'}
 end
 
 %% plot above figure into a big subplot
-% ylabel_name = 'Angular (deg/s)';
-ylabel_name = 'Angle (deg)';
-plt_lib_std = reshape(reshape(ang_lib(1,:),3,2)',[],1); % for 3 by 2 subplot
-plt_lib_dev = reshape(reshape(ang_lib(2,:),3,2)',[],1); % for 3 by 2 subplot
+ylabel_name = 'Angular (deg/s)';
+% ylabel_name = 'Angle (deg)';
+plt_lib_std = reshape(reshape(v_ang_lib(1,:),3,2)',[],1); % for 3 by 2 subplot
+plt_lib_dev = reshape(reshape(v_ang_lib(2,:),3,2)',[],1); % for 3 by 2 subplot
 % plt_lib = subplot_lib; % for 2 by 3 subplot
 ev_name = {'stim','stim','gip','gip','fix','fix'};
 fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
@@ -703,14 +702,14 @@ for cond_i = 1:2
     plt_fix_gip = output.cir.diff_fix_stim - output.cir.diff_gip_stim;
     
     ax1 = subplot(1,2,cond_i);
-    x = plt_fix_gip;
-    y = plt_grab_fix;
+    x = output.cir.diff_gip_stim;
+    y = plt_grab_gip;
     [corr_R, corr_p] = corrcoef(x,y);
     plot(x, y,'bo','DisplayName',sprintf('Corr. = %.3f, p val. = %.3f', corr_R(1,2),corr_p(1,2)),'linewidth',3,'markersize',15);
     set(gca,'fontsize',20)
-    xlabel('GIP-Fix')
-    ylabel('Response-Fix')
-    title('Latency: GIP-Fix vs Response-Fix')
+    xlabel('GIP onset')
+    ylabel('Response-GIP')
+    title('Latency: GIP onset vs Response-GIP')
     hold on
     grid on
     pfit = polyfit(x,y,1);
@@ -837,17 +836,25 @@ fig.PaperSize = fig.Position(3:4);
 
 %% compare behavior
 % merged
-ev_name = 'stim';
+ev_name = 'fix';
 cond_i = 2;
-plt_t = epoch_lib{1}.std_epoch.times;
 
 plt_behav = struct('h_a_cir',[],'h_a_dev',[],'e_a_cir',[],'e_a_dev',[],'g_a_cir',[],'g_a_dev',[],...
                    'h_ad_cir',[],'h_ad_dev',[],'e_ad_cir',[],'e_ad_dev',[],'g_ad_cir',[],'g_ad_dev',[]);
 for i = 1:length(behav_lib(cond_i,:))
     switch ev_name
         case 'stim'
+            plt_t = epoch_lib{1}.std_epoch.times;
             e_name_std = 'std_epoch';
             e_name_dev = 'dev_epoch';
+        case 'gip'
+            plt_t = epoch_lib{1}.gip_std.times;
+            e_name_std = 'gip_std';
+            e_name_dev = 'gip_dev';
+        case 'fix'
+            plt_t = epoch_lib{1}.fix_std.times;
+            e_name_std = 'fix_std';
+            e_name_dev = 'fix_dev';
     end
             
     h_a_cir = behav_lib{cond_i,i}.(e_name_std).headAng;
@@ -882,14 +889,43 @@ end
 
 
 %%
-plt_1 = 'e_ad_dev';
-plt_2 = 'e_ad_cir';
+behav_name = 'gip';
+plt_metric = 'angle';
+
+switch behav_name
+    case 'head'
+        plt_b = 'h';
+    case 'eye'
+        plt_b = 'e';
+    case 'gip'
+        plt_b = 'g';
+end
+switch plt_metric
+    case 'angle'
+        plt_m = 'a';
+        yname = 'Angle (degree)';
+    otherwise
+        plt_m = 'ad';
+        yname = 'Angle Difference (degree/sec)';
+end
+plt_1 = sprintf('%c_%s_dev',plt_b, plt_m);
+plt_2 = sprintf('%c_%s_cir',plt_b, plt_m);
+tname = [behav_name,'-',plt_metric];
+shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
 figure
-h = ttest2(plt_behav.(plt_1)',plt_behav.(plt_2)');
-h(isnan(h)) = 0;
-h = logical(h);
-plot(plt_t, mean(plt_behav.(plt_1),2,'omitnan'), 'b-', 'linewidth',3);
+% h = ttest2(plt_behav.(plt_1)',plt_behav.(plt_2)');
+% h(isnan(h)) = 0;
+% h = logical(h);
+% plot(plt_t, mean(plt_behav.(plt_1),2,'omitnan'), 'b-', 'linewidth',3, 'DisplayName',plt_1);
+hf = shadedErrorBar(plt_t, plt_behav.(plt_1)', shaded_method, 'lineprops',{'b-','linewidth',3,'DisplayName',plt_1});
 hold on
 grid on
-plot(plt_t, mean(plt_behav.(plt_2),2,'omitnan'), 'r-', 'linewidth',3);
-plot(plt_t(h), mean(plt_behav.(plt_2)(h,:),2,'omitnan'),'kx','linewidth',3,'markersize',15);
+% plot(plt_t, mean(plt_behav.(plt_2),2,'omitnan'), 'r-', 'linewidth',3,'DisplayName',plt_2);
+hf = shadedErrorBar(plt_t, plt_behav.(plt_2)', shaded_method, 'lineprops',{'r-','linewidth',3,'DisplayName',plt_2});
+% plot(plt_t(h), mean(plt_behav.(plt_2)(h,:),2,'omitnan'),'kx','linewidth',3,'markersize',15);
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'Interpreter','none')
+title(tname)
+xlabel('Time (ms)')
+ylabel(yname)
+
+%% separate trials into fast and slow response in head turning condition

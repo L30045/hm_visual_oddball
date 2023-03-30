@@ -13,9 +13,13 @@ function fix_1st = find_1st_fix(fix_start,gip_t, stim_t)
 %% Data parsing
 t_threshold = 1000; % If the duration between target time points and
 % event found is larger than this threshold, discard the event found. (ms)
-fix_start = reshape(fix_start,[],1);
-fix_end = fix_start(:,2);
-
+if size(fix_start,1)==1 || size(fix_start,2)==1
+    fix_start = reshape(fix_start,[],1);
+    fix_end_t = fix_start;
+else
+    ev_end_t = fix_start(:,2);
+    fix_start = fix_start(:,1);
+end
 % intialize output
 ev_idx = nan(size(gip_t));
 
@@ -23,20 +27,19 @@ for i = 1:length(gip_t)
     % find the first event onset after target
     f_idx = find(fix_start>gip_t(i),1);
     % find the first event offset after target
-    b_idx = find(fix_end>gip_t(i),1);
+    b_idx = find(ev_end_t>gip_t(i),1);
     % check if event onset exist
-    if ~isempty(f_idx) || ~isempty(b_idx)
+    if ~isempty(f_idx)
         % check if event offset happens earlier than event onset
-        if isempty(f_idx) || b_idx <= f_idx
+        if b_idx <= f_idx
+            % check if fix happens earlier than stim
+            if b_idx
             % replace f_idx by b_idx
             f_idx = b_idx;
         end
         % check if the duration exceed threshold.
         if abs(fix_start(f_idx)-gip_t(i))<=t_threshold
-            % check if fix happens earlier than stim
-            if fix_start(f_idx) > stim_t(i)
-                ev_idx(i) = fix_start(f_idx);
-            end
+            ev_idx(i) = fix_start(f_idx);
         end
     end
 end

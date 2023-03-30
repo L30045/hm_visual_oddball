@@ -9,7 +9,11 @@ tri_data = squeeze(tri_epoch.data(ch_idx,:,:))';
 % plt_p = p<=0.05/sqrt(size(cir_data,2));
 p = rowfun(@ranksum,table(cir_data',tri_data'));
 p = p{:,:}';
-plt_p = p<=(0.05/length(p));
+time_test = [200,600]; % ms, time period for statistical test
+idx_test = plt_t >= time_test(1) & plt_t<= time_test(2);
+[~, h] = fdr(p(idx_test), 0.05, 'nonparametric');
+plt_p = false(size(p));
+plt_p(idx_test) = h;
 
 % plot ERP
 fig = figure('units','normalized','outerposition',[0 0 1 1]);
@@ -20,7 +24,7 @@ ht.patch.FaceAlpha = 0.1;
 grid on
 hold on
 % >> Circle
-disp(size(cir_data))
+% disp(size(cir_data))
 hc = shadedErrorBar(plt_t, cir_data, shaded_method,'lineprops',...
     {'color','r','linewidth',3,'DisplayName','Deviant'});
 hc.patch.FaceAlpha = 0.1;
