@@ -1,5 +1,19 @@
 %% Cross subjects GIP visualization
 % load eopch_lib
+filepath = 'D:/Research/oddball_epoch/';
+subj_list = {dir([filepath, 'rmPreStim*']).name};
+
+epoch_lib = cell(2,length(subj_list));
+for i = 1:length(subj_list)
+    fprintf('Current Subject: %d / %d\n',i, length(subj_list));
+    load([filepath,subj_list{i}]);
+    epoch_lib{1,i} = epoch_struct_noHm;
+    epoch_lib{2,i} = epoch_struct_Hm;
+end
+% savepath = filepath;
+disp('Done.\n')
+
+%% parameter
 cond_i = 2;
 len_cube = 0.110433;
 center_align = [0;0];
@@ -37,7 +51,7 @@ downLoc = downLoc+offset;
 rightLoc = rightLoc+offset;
 leftLoc = leftLoc+offset;
 centerLoc = center_align;
-val_alpha = 0.05;
+val_alpha = 0.5;
 
 figure
 % plot out target location
@@ -68,8 +82,13 @@ for i = 1:size(plt_x,2)
         plt_x(gip_onset_lib(i)+1:end,i) = nan;
         plt_y(gip_onset_lib(i)+1:end,i) = nan;
         if ~isnan(fix_onset_lib(i))
-            plt_x_f(gip_onset_lib(i):fix_onset_lib(i),i) = proj_x(gip_onset_lib(i):fix_onset_lib(i),i);
-            plt_y_f(gip_onset_lib(i):fix_onset_lib(i),i) = proj_y(gip_onset_lib(i):fix_onset_lib(i),i);
+            if ~if_early_lib(i)
+                plt_x_f(gip_onset_lib(i):fix_onset_lib(i),i) = proj_x(gip_onset_lib(i):fix_onset_lib(i),i);
+                plt_y_f(gip_onset_lib(i):fix_onset_lib(i),i) = proj_y(gip_onset_lib(i):fix_onset_lib(i),i);
+            else
+                plt_x_f(fix_onset_lib(i):gip_onset_lib(i),i) = proj_x(fix_onset_lib(i):gip_onset_lib(i),i);
+                plt_y_f(fix_onset_lib(i):gip_onset_lib(i),i) = proj_y(fix_onset_lib(i):gip_onset_lib(i),i);
+            end
             fix_x(i) = proj_x(fix_onset_lib(i),i);
             fix_y(i) = proj_y(fix_onset_lib(i),i);
         end
@@ -81,10 +100,16 @@ for i = 1:size(plt_x,2)
     end
     
 end
-plot(plt_x,plt_y,'-','linewidth',1,'color',[0,0,1,val_alpha]);
-scatter(plt_x,plt_y,'MarkerFaceColor','b','MarkerFaceAlpha',val_alpha,'MarkerEdgeColor','b','MarkerEdgeAlpha',val_alpha);
-plot(plt_x_f,plt_y_f,'-','linewidth',1,'color',[0,0,1,val_alpha]);
-scatter(plt_x_f,plt_y_f,'MarkerFaceColor','g','MarkerFaceAlpha',val_alpha,'MarkerEdgeColor','g','MarkerEdgeAlpha',val_alpha);
+plot(plt_x,plt_y,'-','linewidth',1,'color',[0,0,1,val_alpha/10]);
+% scatter(plt_x,plt_y,'MarkerFaceColor','b','MarkerFaceAlpha',val_alpha,...
+%     'MarkerEdgeColor','b','MarkerEdgeAlpha',val_alpha);
+% color map
+plot(plt_x_f(:,if_early_lib==1),plt_y_f(:,if_early_lib==1),'-','linewidth',1,'color',[1,0,0,val_alpha]);
+plot(plt_x_f(:,if_early_lib==0),plt_y_f(:,if_early_lib==0),'-','linewidth',1,'color',[0,1,0,val_alpha]);
+% scatter(plt_x_f,plt_y_f,'MarkerFaceColor','g','MarkerFaceAlpha',val_alpha,...
+%     'MarkerEdgeColor','g','MarkerEdgeAlpha',val_alpha);
 % plot gip onset and fixation onset
-scatter(gip_x,gip_y,'MarkerFaceColor','m','MarkerFaceAlpha',val_alpha*10,'MarkerEdgeColor','m','MarkerEdgeAlpha',val_alpha*10,'marker','d');
-scatter(fix_x,fix_y,'MarkerFaceColor','r','MarkerFaceAlpha',val_alpha*10,'MarkerEdgeColor','r','MarkerEdgeAlpha',val_alpha*10,'marker','s');
+scatter(gip_x,gip_y,'MarkerFaceColor','b','MarkerFaceAlpha',val_alpha,...
+    'MarkerEdgeColor','b','MarkerEdgeAlpha',val_alpha,'marker','*');
+scatter(fix_x,fix_y,'MarkerFaceColor','r','MarkerFaceAlpha',val_alpha,...
+    'MarkerEdgeColor','r','MarkerEdgeAlpha',val_alpha,'marker','d');

@@ -237,9 +237,9 @@ plt_idx = 3;
 pop_comperp(eeg_array, 1, plt_idx*2-1,plt_idx*2,'addavg','on','addstd','off','subavg','on','diffavg','on','diffstd','off','alpha',0.05,'tplotopt',{'ydir',1});
 
 %% plot ERP
-tarCh = 'POz';
+tarCh = 'Cz';
 lock_name = 'fix';
-cond_name = 'noHm';
+cond_name = 'Hm';
 switch cond_name
     case 'noHm'
         cond_i = 1;
@@ -257,41 +257,57 @@ switch lock_name
         plt_EEG_cir = merged_lib{cond_i}.fix_std;
         plt_EEG_tri = merged_lib{cond_i}.fix_dev;
 end
-shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
-% shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan'))};
+% shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
+shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan'))};
 % shaded_method = {@(x)(mean(x,'omitnan')),@(x)(std(x,'omitnan')/sqrt(size(x,1)))};
 fig = plt_erp(plt_EEG_cir,plt_EEG_tri,tarCh,lock_name,shaded_method);
 
 
 
 %% plot ERP topo
-pop_topoplot(eeg_array(6), 1, [-400:50:600],'Hm fix circle',[5 5] ,0,'electrodes','on');
+% further remove trial based on high variance
+plt_EEG = eeg_array(4);
+var_thres = 0.95;
+var_dist = reshape(mean(var(plt_EEG.data,[],2),1),[],1);
+plt_EEG = pop_rejepoch(plt_EEG,var_dist> quantile(var_dist,var_thres),0);
+pop_topoplot(plt_EEG, 1, [-400:50:600],'Hm fix circle',[5 5] ,0,'electrodes','on');
 
 %% plot difference
-plt_idx = 3;
+plt_idx = 1;
+plt_method = @median;
 if plt_idx == 1
     plt_t_idx = [-200:50:800];
 else
     plt_t_idx = [-400:50:600];
 end
-tmp_cir = eeg_array(plt_idx*2-1);
-tmp_cir.trials = 1;
-tmp_cir.data = median(tmp_cir.data,3);
-tmp_tri = eeg_array(plt_idx*2);
-tmp_tri_data = median(tmp_tri.data,3);
-tmp_eeg = tmp_cir;
-tmp_eeg.data = tmp_eeg.data-tmp_tri_data;
+cir_data = eeg_array(plt_idx*2-1).data;
+tri_data = eeg_array(plt_idx*2).data;
+
+% further remove trial based on high variance
+var_thres = 0.95;
+var_dist_cir = reshape(mean(var(cir_data,[],2),1),[],1);
+var_dist_tri = reshape(mean(var(tri_data,[],2),1),[],1);
+cir_data(:,:,var_dist_cir > quantile(var_dist_cir,var_thres)) = [];
+tri_data(:,:,var_dist_tri > quantile(var_dist_tri,var_thres)) = [];
+
+tmp_eeg = eeg_array(plt_idx*2-1);
+tmp_eeg.trials = 1;
+tmp_eeg.data = plt_method(cir_data,3) - plt_method(tri_data,3);
 pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 
 
 %% ERPImage
-smooth = 10;
+smooth = 5;
+var_thres = 0.95;
+clim = [-10 10];
 plt_EEG = eeg_array(5);
 tarCh = 'Cz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
+var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
+rm_trial = var_dist > quantile(var_dist,var_thres);
+plt_EEG = pop_rejepoch(plt_EEG,rm_trial,0);
 sort_ev = {plt_EEG.event(cellfun(@(x) ~isempty(regexp(x,'Ring 0','once')),{plt_EEG.event.type})).type};
-figure; pop_erpimage(plt_EEG,1,[idx_tarCh],[[]],tarCh,smooth,1,sort_ev,[],'latency' ,'yerplabel','\muV','erp','on','cbar','on','topo', { [idx_tarCh] plt_EEG.chanlocs plt_EEG.chaninfo },'caxis',[-20 20]);
+figure; pop_erpimage(plt_EEG,1,[idx_tarCh],[[]],tarCh,smooth,1,sort_ev,[],...
+    'latency' ,'yerplabel','\muV','erp','on','cbar','on','topo',...
+    { [idx_tarCh] plt_EEG.chanlocs plt_EEG.chaninfo },'caxis',clim);
 % figure; pop_erpimage(EEG,1, [15],[[]],'Cz',smooth,1,{ 'Ring 0; Trial 0; Cube index(L): 1; Frequency: 9; Position: (0.9208, 1.629, 2.345)' 'Ring 0; Trial 0; Cube index(L): 3; Frequency: 11; Position: (0.9091, 1.314, 2.345)' 'Ring 0; Trial 10; Cube index(L): 3; Frequency: 11; Position: (0.8541, 1.151, 2.345)' 'Ring 0; Trial 11; Cube index(L): 0; Frequency: 8; Position: (1.041, 1.444, 2.345)' 'Ring 0; Trial 12; Cube index(L): 1; Frequency: 9; Position: (0.8659, 1.619, 2.345)' 'Ring 0; Trial 13; Cube index(L): 0; Frequency: 8; Position: (1.233, 1.435, 2.345)' 'Ring 0; Trial 13; Cube index(L): 0; Position: (0.9164, 1.414, 2.345)' 'Ring 0; Trial 13; Cube index(L): 2; Frequency: 10; Position: (0.7458, 1.454, 2.345)' 'Ring 0; Trial 15; Cube index(L): 1; Position: (0.7414, 1.589, 2.345)' 'Ring 0; Trial 15; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 15; Cube index(L): 3; Frequency: 11; Position: (0.8659, 1.269, 2.345)' 'Ring 0; Trial 16; Cube index(L): 1; Frequency: 9; Position: (0.9091, 1.664, 2.345)' 'Ring 0; Trial 16; Cube index(L): 1; Position: (0.7414, 1.589, 2.345)' 'Ring 0; Trial 16; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 17; Cube index(L): 1; Frequency: 9; Position: (0.9208, 1.629, 2.345)' 'Ring 0; Trial 17; Cube index(L): 3; Position: (0.9253, 1.35, 2.345)' 'Ring 0; Trial 18; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 19; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 19; Cube index(L): 3; Frequency: 11; Position: (0.8541, 1.151, 2.345)' 'Ring 0; Trial 19; Cube index(L): 3; Position: (0.9253, 1.35, 2.345)' 'Ring 0; Trial 20; Cube index(L): 1; Frequency: 9; Position: (0.9091, 1.664, 2.345)' 'Ring 0; Trial 20; Cube index(L): 3; Frequency: 11; Position: (0.8659, 1.269, 2.345)' 'Ring 0; Trial 21; Cube index(L): 2; Frequency: 10; Position: (0.7341, 1.489, 2.345)' 'Ring 0; Trial 21; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 22; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 24; Cube index(L): 2; Frequency: 10; Position: (0.6909, 1.444, 2.345)' 'Ring 0; Trial 24; Cube index(L): 3; Frequency: 11; Position: (1.188, 1.308, 2.345)' 'Ring 0; Trial 25; Cube index(L): 1; Frequency: 9; Position: (0.8659, 1.619, 2.345)' 'Ring 0; Trial 25; Cube index(L): 2; Frequency: 10; Position: (0.6791, 1.326, 2.345)' 'Ring 0; Trial 25; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 26; Cube index(L): 2; Position: (0.5664, 1.414, 2.345)' 'Ring 0; Trial 27; Cube index(L): 0; Frequency: 8; Position: (1.096, 1.454, 2.345)' 'Ring 0; Trial 27; Cube index(L): 1; Position: (0.7414, 1.589, 2.345)' 'Ring 0; Trial 28; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 2; Cube index(L): 0; Position: (0.9164, 1.414, 2.345)' 'Ring 0; Trial 30; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 31; Cube index(L): 1; Frequency: 9; Position: (1.058, 1.61, 2.345)' 'Ring 0; Trial 31; Cube index(L): 1; Position: (0.9253, 1.7, 2.345)' 'Ring 0; Trial 32; Cube index(L): 2; Position: (0.5664, 1.414, 2.345)' 'Ring 0; Trial 35; Cube index(L): 3; Frequency: 11; Position: (0.8541, 1.151, 2.345)' 'Ring 0; Trial 35; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 36; Cube index(L): 0; Position: (0.9164, 1.414, 2.345)' 'Ring 0; Trial 36; Cube index(L): 1; Frequency: 9; Position: (1.188, 1.658, 2.345)' 'Ring 0; Trial 36; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 37; Cube index(L): 2; Frequency: 10; Position: (0.7458, 1.454, 2.345)' 'Ring 0; Trial 38; Cube index(L): 2; Position: (0.5664, 1.414, 2.345)' 'Ring 0; Trial 39; Cube index(L): 1; Frequency: 9; Position: (0.9208, 1.629, 2.345)' 'Ring 0; Trial 40; Cube index(L): 3; Frequency: 11; Position: (1.188, 1.308, 2.345)' 'Ring 0; Trial 43; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 44; Cube index(L): 1; Position: (0.9253, 1.7, 2.345)' 'Ring 0; Trial 44; Cube index(L): 2; Frequency: 10; Position: (0.7458, 1.454, 2.345)' 'Ring 0; Trial 45; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 46; Cube index(L): 2; Frequency: 10; Position: (0.883, 1.435, 2.345)' 'Ring 0; Trial 47; Cube index(L): 1; Frequency: 9; Position: (1.058, 1.61, 2.345)' 'Ring 0; Trial 49; Cube index(L): 0; Frequency: 8; Position: (1.363, 1.483, 2.345)' 'Ring 0; Trial 49; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 49; Cube index(L): 3; Position: (0.9253, 1.35, 2.345)' 'Ring 0; Trial 4; Cube index(L): 1; Frequency: 9; Position: (0.8541, 1.501, 2.345)' 'Ring 0; Trial 4; Cube index(L): 2; Position: (0.5664, 1.414, 2.345)' 'Ring 0; Trial 4; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 50; Cube index(L): 1; Frequency: 9; Position: (0.8659, 1.619, 2.345)' 'Ring 0; Trial 51; Cube index(L): 0; Frequency: 8; Position: (1.029, 1.326, 2.345)' 'Ring 0; Trial 51; Cube index(L): 0; Frequency: 8; Position: (1.096, 1.454, 2.345)' 'Ring 0; Trial 51; Cube index(L): 3; Frequency: 11; Position: (1.058, 1.26, 2.345)' 'Ring 0; Trial 52; Cube index(L): 0; Position: (1.1, 1.525, 2.345)' 'Ring 0; Trial 53; Cube index(L): 0; Position: (1.1, 1.525, 2.345)' 'Ring 0; Trial 53; Cube index(L): 2; Frequency: 10; Position: (0.883, 1.435, 2.345)' 'Ring 0; Trial 53; Cube index(L): 3; Frequency: 11; Position: (0.9091, 1.314, 2.345)' 'Ring 0; Trial 55; Cube index(L): 0; Frequency: 8; Position: (1.029, 1.326, 2.345)' 'Ring 0; Trial 55; Cube index(L): 1; Frequency: 9; Position: (1.188, 1.658, 2.345)' 'Ring 0; Trial 55; Cube index(L): 3; Frequency: 11; Position: (0.9091, 1.314, 2.345)' 'Ring 0; Trial 56; Cube index(L): 2; Frequency: 10; Position: (0.7458, 1.454, 2.345)' 'Ring 0; Trial 57; Cube index(L): 1; Frequency: 9; Position: (0.8541, 1.501, 2.345)' 'Ring 0; Trial 57; Cube index(L): 1; Frequency: 9; Position: (0.9091, 1.664, 2.345)' 'Ring 0; Trial 57; Cube index(L): 2; Position: (0.7503, 1.525, 2.345)' 'Ring 0; Trial 57; Cube index(L): 3; Frequency: 11; Position: (1.188, 1.308, 2.345)' 'Ring 0; Trial 58; Cube index(L): 3; Frequency: 11; Position: (1.058, 1.26, 2.345)' 'Ring 0; Trial 59; Cube index(L): 2; Position: (0.7503, 1.525, 2.345)' 'Ring 0; Trial 5; Cube index(L): 0; Position: (1.1, 1.525, 2.345)' 'Ring 0; Trial 5; Cube index(L): 1; Frequency: 9; Position: (0.8541, 1.501, 2.345)' 'Ring 0; Trial 61; Cube index(L): 2; Frequency: 10; Position: (0.6791, 1.326, 2.345)' 'Ring 0; Trial 62; Cube index(L): 0; Frequency: 8; Position: (1.041, 1.444, 2.345)' 'Ring 0; Trial 63; Cube index(L): 0; Position: (1.1, 1.525, 2.345)' 'Ring 0; Trial 63; Cube index(L): 2; Frequency: 10; Position: (0.6791, 1.326, 2.345)' 'Ring 0; Trial 64; Cube index(L): 1; Frequency: 9; Position: (1.188, 1.658, 2.345)' 'Ring 0; Trial 65; Cube index(L): 2; Frequency: 10; Position: (0.6909, 1.444, 2.345)' 'Ring 0; Trial 65; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 66; Cube index(L): 2; Position: (0.5664, 1.414, 2.345)' 'Ring 0; Trial 67; Cube index(L): 0; Position: (0.9164, 1.414, 2.345)' 'Ring 0; Trial 67; Cube index(L): 1; Frequency: 9; Position: (0.8541, 1.501, 2.345)' 'Ring 0; Trial 67; Cube index(L): 3; Frequency: 11; Position: (0.8659, 1.269, 2.345)' 'Ring 0; Trial 68; Cube index(L): 0; Frequency: 8; Position: (1.096, 1.454, 2.345)' 'Ring 0; Trial 68; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 69; Cube index(L): 0; Frequency: 8; Position: (1.084, 1.489, 2.345)' 'Ring 0; Trial 69; Cube index(L): 2; Frequency: 10; Position: (0.6909, 1.444, 2.345)' 'Ring 0; Trial 6; Cube index(L): 0; Position: (1.1, 1.525, 2.345)' 'Ring 0; Trial 70; Cube index(L): 0; Frequency: 8; Position: (1.363, 1.483, 2.345)' 'Ring 0; Trial 70; Cube index(L): 1; Frequency: 9; Position: (0.8541, 1.501, 2.345)' 'Ring 0; Trial 70; Cube index(L): 3; Frequency: 11; Position: (0.8659, 1.269, 2.345)' 'Ring 0; Trial 71; Cube index(L): 1; Frequency: 9; Position: (0.8541, 1.501, 2.345)' 'Ring 0; Trial 73; Cube index(L): 0; Frequency: 8; Position: (1.084, 1.489, 2.345)' 'Ring 0; Trial 74; Cube index(L): 2; Frequency: 10; Position: (0.883, 1.435, 2.345)' 'Ring 0; Trial 74; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 75; Cube index(L): 3; Frequency: 11; Position: (0.9208, 1.279, 2.345)' 'Ring 0; Trial 76; Cube index(L): 0; Frequency: 8; Position: (1.084, 1.489, 2.345)' 'Ring 0; Trial 76; Cube index(L): 1; Position: (0.7414, 1.589, 2.345)' 'Ring 0; Trial 76; Cube index(L): 2; Frequency: 10; Position: (0.7458, 1.454, 2.345)' 'Ring 0; Trial 76; Cube index(L): 2; Frequency: 10; Position: (0.883, 1.435, 2.345)' 'Ring 0; Trial 77; Cube index(L): 0; Frequency: 8; Position: (1.363, 1.483, 2.345)' 'Ring 0; Trial 78; Cube index(L): 0; Frequency: 8; Position: (1.041, 1.444, 2.345)' 'Ring 0; Trial 78; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 79; Cube index(L): 0; Position: (0.9164, 1.414, 2.345)' 'Ring 0; Trial 79; Cube index(L): 3; Frequency: 11; Position: (0.9091, 1.314, 2.345)' 'Ring 0; Trial 7; Cube index(L): 1; Frequency: 9; Position: (1.058, 1.61, 2.345)' 'Ring 0; Trial 7; Cube index(L): 2; Frequency: 10; Position: (1.013, 1.483, 2.345)' 'Ring 0; Trial 80; Cube index(L): 2; Position: (0.5664, 1.414, 2.345)' 'Ring 0; Trial 82; Cube index(L): 1; Frequency: 9; Position: (0.9208, 1.629, 2.345)' 'Ring 0; Trial 83; Cube index(L): 1; Frequency: 9; Position: (1.058, 1.61, 2.345)' 'Ring 0; Trial 83; Cube index(L): 2; Frequency: 10; Position: (0.6791, 1.326, 2.345)' 'Ring 0; Trial 83; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 84; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 85; Cube index(L): 2; Frequency: 10; Position: (0.6909, 1.444, 2.345)' 'Ring 0; Trial 87; Cube index(L): 0; Frequency: 8; Position: (1.096, 1.454, 2.345)' 'Ring 0; Trial 87; Cube index(L): 1; Position: (0.9253, 1.7, 2.345)' 'Ring 0; Trial 87; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 89; Cube index(L): 3; Frequency: 11; Position: (0.9091, 1.314, 2.345)' 'Ring 0; Trial 89; Cube index(L): 3; Position: (0.9253, 1.35, 2.345)' 'Ring 0; Trial 8; Cube index(L): 1; Frequency: 9; Position: (0.9208, 1.629, 2.345)' 'Ring 0; Trial 8; Cube index(L): 1; Position: (0.9253, 1.7, 2.345)' 'Ring 0; Trial 92; Cube index(L): 1; Frequency: 9; Position: (0.9091, 1.664, 2.345)' 'Ring 0; Trial 93; Cube index(L): 1; Position: (0.9253, 1.7, 2.345)' 'Ring 0; Trial 94; Cube index(L): 2; Frequency: 10; Position: (0.6909, 1.444, 2.345)' 'Ring 0; Trial 95; Cube index(L): 3; Position: (0.7414, 1.239, 2.345)' 'Ring 0; Trial 96; Cube index(L): 0; Frequency: 8; Position: (1.233, 1.435, 2.345)' 'Ring 0; Trial 97; Cube index(L): 3; Frequency: 11; Position: (1.188, 1.308, 2.345)' 'Ring 0; Trial 99; Cube index(L): 2; Frequency: 10; Position: (0.6909, 1.444, 2.345)'},[],'latency' ,'yerplabel','\muV','erp','on','cbar','on','topo', { [15] EEG.chanlocs EEG.chaninfo },'caxis',[-30 30] );
-
-
-

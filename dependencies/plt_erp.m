@@ -4,6 +4,13 @@ plt_t = cir_epoch.times;
 cir_data = squeeze(cir_epoch.data(ch_idx,:,:))';
 tri_data = squeeze(tri_epoch.data(ch_idx,:,:))';
 
+% further remove trial based on high variance
+var_thres = 0.95;
+var_dist_cir = reshape(var(cir_data,[],2),[],1);
+var_dist_tri = reshape(var(tri_data,[],2),[],1);
+cir_data(var_dist_cir > quantile(var_dist_cir,var_thres),:) = [];
+tri_data(var_dist_tri > quantile(var_dist_tri,var_thres),:) = [];
+
 % [~,p] = ttest2(cir_data,tri_data);
 % [~,plt_p] = bonf_holm(p);
 % plt_p = p<=0.05/sqrt(size(cir_data,2));

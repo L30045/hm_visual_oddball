@@ -67,13 +67,26 @@ for i = 1:nb_subj
             tri_epoch = [];
             cir_epoch = cond_struct.grab_epoch;     
     end
-    % remove bad trials
-    ch_idx = find(ismember({cir_epoch.chanlocs.labels},tarCh));
+    
+    ch_idx = ismember({cir_epoch.chanlocs.labels},tarCh);
     plt_t = cir_epoch.times;
-    cir_lib(i,:) = mean(cir_epoch.data(ch_idx,:,:),3);    
-    if ~isempty(tri_epoch)
-        tri_lib(i,:) = mean(tri_epoch.data(ch_idx,:,:),3);
-    end
+    cir_data = squeeze(cir_epoch.data(ch_idx,:,:))';
+    tri_data = squeeze(tri_epoch.data(ch_idx,:,:))';
+    % further remove trial based on high variance
+    var_thres = 0.95;
+    var_dist_cir = reshape(var(cir_data,[],2),[],1);
+    var_dist_tri = reshape(var(tri_data,[],2),[],1);
+    cir_data(var_dist_cir > quantile(var_dist_cir,var_thres),:) = [];
+    tri_data(var_dist_tri > quantile(var_dist_tri,var_thres),:) = [];
+    cir_lib(i,:) = mean(cir_data,1);
+    tri_lib(i,:) = mean(tri_data,1);
+    % remove bad trials
+%     ch_idx = find(ismember({cir_epoch.chanlocs.labels},tarCh));
+%     plt_t = cir_epoch.times;
+%     cir_lib(i,:) = mean(cir_epoch.data(ch_idx,:,:),3);    
+%     if ~isempty(tri_epoch)
+%         tri_lib(i,:) = mean(tri_epoch.data(ch_idx,:,:),3);
+%     end
 end
 
 if is_plot
