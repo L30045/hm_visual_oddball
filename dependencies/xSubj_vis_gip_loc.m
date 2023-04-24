@@ -104,12 +104,13 @@ plot(plt_x,plt_y,'-','linewidth',1,'color',[0,0,1,val_alpha/10]);
 % scatter(plt_x,plt_y,'MarkerFaceColor','b','MarkerFaceAlpha',val_alpha,...
 %     'MarkerEdgeColor','b','MarkerEdgeAlpha',val_alpha);
 % color map
-plot(plt_x_f(:,if_early_lib==1),plt_y_f(:,if_early_lib==1),'-','linewidth',1,'color',[1,0,0,val_alpha]);
+plot(plt_x_f(:,if_early_lib==1),plt_y_f(:,if_early_lib==1),'-','linewidth',2,'color',[1,0,0,1]);
 plot(plt_x_f(:,if_early_lib==0),plt_y_f(:,if_early_lib==0),'-','linewidth',1,'color',[0,1,0,val_alpha]);
 % scatter(plt_x_f,plt_y_f,'MarkerFaceColor','g','MarkerFaceAlpha',val_alpha,...
 %     'MarkerEdgeColor','g','MarkerEdgeAlpha',val_alpha);
 % plot gip onset and fixation onset
 scatter(gip_x,gip_y,'MarkerFaceColor','b','MarkerFaceAlpha',val_alpha,...
-    'MarkerEdgeColor','b','MarkerEdgeAlpha',val_alpha,'marker','*');
+    'MarkerEdgeColor','b','MarkerEdgeAlpha',val_alpha,'marker','*','DisplayName','GIP onset');
 scatter(fix_x,fix_y,'MarkerFaceColor','r','MarkerFaceAlpha',val_alpha,...
-    'MarkerEdgeColor','r','MarkerEdgeAlpha',val_alpha,'marker','d');
+    'MarkerEdgeColor','r','MarkerEdgeAlpha',val_alpha,'marker','d','DisplayName','FIX onset');
+legend(findobj(gca,'-regexp','DisplayName', '[^'']'),'location','northwest')

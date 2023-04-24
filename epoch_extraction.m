@@ -3,22 +3,30 @@ filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
 loadpath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
 savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/'; % Correct the synchronization issue in epoch_ez and create new epoch.
 
-filename_list = reshape({dir([loadpath,'*Oddball*']).name},2,[])';
+subpath = {dir(['sub*']).name};
+
+for j = 1:length(subpath)
+filepath = sprintf('%s/',subpath{j});
+loadpath = filepath;
+savepath = [pwd,'/'];
+    
+filename_list = reshape({dir([loadpath,'*Oddball*.xdf']).name},2,[])';
 inner_list = filename_list(:,1);
 outer_list = filename_list(:,2);
 inner_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,1),'uniformoutput',0);
 outer_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,2),'uniformoutput',0);
 
-parfor i = 1:size(filename_list,1)
+for i = 1:size(filename_list,1)
     EEG_noHm = pop_loadset([filepath,inner_data{i}]);
     EEG_Hm = pop_loadset([filepath,outer_data{i}]);
     [epoch_struct_noHm, ~]...
-    = epoch_ez_v2([loadpath,inner_list{i}], EEG_noHm);
+    = epoch_ez_v3([loadpath,inner_list{i}], EEG_noHm);
     [epoch_struct_Hm, ~]...
-    = epoch_ez_v2([loadpath,outer_list{i}], EEG_Hm);
+    = epoch_ez_v3([loadpath,outer_list{i}], EEG_Hm);
     parsave([savepath,sprintf('rmPreStim_new_s%02d_epoch_%s.mat',i,inner_list{i}(1:4))],epoch_struct_noHm,epoch_struct_Hm);
 end
 
+end
 disp('Done')
 
 %% Old file (Smarting)
