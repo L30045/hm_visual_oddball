@@ -109,7 +109,8 @@ title('Angle vs Time')
 
 % angle vs eye_open_idx
 figure
-plot(t_ruler, plt_ang_v, '-', 'DisplayName', 'Angular speed','Color',[0.5 0.5 1],'LineWidth',lw);
+% plot(t_ruler, plt_ang_v, '-', 'DisplayName', 'Angular speed','Color',[0.5 0.5 1],'LineWidth',lw);
+plot(t_ruler, plt_ang_v, '-', 'DisplayName', 'Angular speed','Color',[0.3,0.7,0.3],'LineWidth',lw);
 hold on
 grid on
 plot(t_ruler, plt_fix_ang_v, 'b-', 'DisplayName', 'Fix','LineWidth',lw);
