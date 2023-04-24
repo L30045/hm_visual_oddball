@@ -27,9 +27,7 @@ for subj_i = 1:size(epoch_lib,2)
         std_epoch = pop_select(tmp_epoch.std_epoch,'channel',tarCh);
         dev_epoch = pop_select(tmp_epoch.dev_epoch,'channel',tarCh);
         % check if trial number didn't match
-        if size(tmp_dir_std,2)~=std_epoch.trials
-            error(fprintf('%d, %d',cond_i, subj_i));
-        end
+        if size(tmp_dir_std,2)~=
         gip_std = pop_select(tmp_epoch.gip_std,'channel',tarCh);
         gip_dev = pop_select(tmp_epoch.gip_dev,'channel',tarCh);
         output{cond_i}.event_time.std_time = [output{cond_i}.event_time.std_time, tmp_epoch.event_time.std_time];

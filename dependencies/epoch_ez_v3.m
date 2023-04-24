@@ -41,7 +41,7 @@ function [epoch_struct, EEG] = epoch_ez_v3(filename, EEG)
 
 %% parameter setting
 % epoch length
-len_epoch = [-200 2000]; % epoch length for stimulus-lock epoch
+len_epoch = [-200 1800]; % epoch length for stimulus-lock epoch
 len_epoch_grab = [-1000 1000]; % epoch length for GIP/Response/Fixation-lock epoch
 
 % calculate fixation

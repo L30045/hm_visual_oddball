@@ -223,7 +223,7 @@ end
 
 %% merge EEG for EEGLAB function
 plt_epoch_lib = epoch_lib(:,preserve_idx);
-merged_lib = merge_epoch_lib(plt_epoch_lib);
+merged_lib = merge_epoch_lib(plt_epoch_lib,select_ch);
 disp('Done')
 
 %% topo
@@ -316,7 +316,7 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(5);
+plt_EEG = eeg_array(6);
 tarCh = 'CPz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
