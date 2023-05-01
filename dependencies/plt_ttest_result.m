@@ -223,6 +223,7 @@ end
 
 %% merge EEG for EEGLAB function
 plt_epoch_lib = epoch_lib(:,preserve_idx);
+nb_subj = size(plt_epoch_lib,2);
 merged_lib = merge_epoch_lib(plt_epoch_lib,select_ch);
 disp('Done')
 
@@ -378,6 +379,20 @@ plt_EEG = pop_rejepoch(plt_EEG,var_dist> quantile(var_dist,var_thres),0);
 
 plt_EEG_ica = pop_runica(plt_EEG, 'icatype','runica','extended',1);
 plt_EEG_ica = pop_iclabel(plt_EEG_ica,'default');
+
+%% Check number of trial
+trial_name = fieldnames(merged_lib{1}.nb_trial);
+nbtrial_lib = {2,6};
+
+for cond_i = 1:2
+    nb_trial = merged_lib{cond_i}.nb_trial;
+    tmp = zeros(6,nb_subj);
+    for t_i = 1:length(trial_name)
+        tmp(t_i,:) = [nb_trial.(trial_name{t_i})];
+    end
+    nbtrial_lib{cond_i} = tmp;
+end
+
 
 %%  Cross subjects result with merge_lib
 tarCh = 'CPz';
