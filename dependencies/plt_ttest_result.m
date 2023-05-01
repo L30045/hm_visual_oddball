@@ -223,7 +223,8 @@ end
 
 %% merge EEG for EEGLAB function
 plt_epoch_lib = epoch_lib(:,preserve_idx);
-merged_lib = merge_epoch_lib(plt_epoch_lib);
+nb_subj = size(plt_epoch_lib,2);
+merged_lib = merge_epoch_lib(plt_epoch_lib,select_ch);
 disp('Done')
 
 %% topo
@@ -316,7 +317,7 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(5);
+plt_EEG = eeg_array(6);
 tarCh = 'CPz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
@@ -378,6 +379,20 @@ plt_EEG = pop_rejepoch(plt_EEG,var_dist> quantile(var_dist,var_thres),0);
 
 plt_EEG_ica = pop_runica(plt_EEG, 'icatype','runica','extended',1);
 plt_EEG_ica = pop_iclabel(plt_EEG_ica,'default');
+
+%% Check number of trial
+trial_name = fieldnames(merged_lib{1}.nb_trial);
+nbtrial_lib = {2,6};
+
+for cond_i = 1:2
+    nb_trial = merged_lib{cond_i}.nb_trial;
+    tmp = zeros(6,nb_subj);
+    for t_i = 1:length(trial_name)
+        tmp(t_i,:) = [nb_trial.(trial_name{t_i})];
+    end
+    nbtrial_lib{cond_i} = tmp;
+end
+
 
 %%  Cross subjects result with merge_lib
 tarCh = 'CPz';
