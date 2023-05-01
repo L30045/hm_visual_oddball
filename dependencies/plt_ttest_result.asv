@@ -485,7 +485,7 @@ title('FIX - Hm - DEV')
 %% separate into different directions
 cond_i = 1;
 ev_name = 'gip';
-tarCh = 'Oz';
+tarCh = 'Cz';
 
 % right, up, left, down
 up_idx_cir = cell2mat(cellfun(@(x) x(2,:), merged_lib{cond_i}.dir_trial.dir_std,'uniformoutput',0));
@@ -499,55 +499,31 @@ down_idx_tri = cell2mat(cellfun(@(x) x(4,:), merged_lib{cond_i}.dir_trial.dir_de
 
 switch ev_name
     case 'stim'
-        plt_cir = merged_lib{cond_i}.std_epoch;
-        plt_tri = merged_lib{cond_i}.dev_epoch;
+        plt_cir = 'std_epoch';
+        plt_tri = 'dev_epoch';
         plt_t = merged_lib{cond_i}.std_epoch.times;
-        d_r_c = right_idx_cir;
-        d_u_c = up_idx_cir;
-        d_l_c = left_idx_cir;
-        d_d_c = down_idx_cir;
-        d_r_t = right_idx_tri;
-        d_u_t = up_idx_tri;
-        d_l_t = left_idx_tri;
-        d_d_t = down_idx_tri;
     case 'gip'
-        plt_cir = merged_lib{cond_i}.gip_std;
-        plt_tri = merged_lib{cond_i}.gip_dev;
+        plt_cir = 'gip_std';
+        plt_tri = 'gip_dev';
         plt_t = merged_lib{cond_i}.gip_std.times;
-        d_r_c = right_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
-        d_u_c = up_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
-        d_l_c = left_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
-        d_d_c = down_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
-        d_r_t = right_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
-        d_u_t = up_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
-        d_l_t = left_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
-        d_d_t = down_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
     case 'fix'
-        plt_cir = merged_lib{cond_i}.fix_std;
-        plt_tri = merged_lib{cond_i}.fix_dev;
+        plt_cir = 'fix_std';
+        plt_tri = 'fix_dev';
         plt_t = merged_lib{cond_i}.fix_std.times;
-        d_r_c = right_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
-        d_u_c = up_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
-        d_l_c = left_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
-        d_d_c = down_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
-        d_r_t = right_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
-        d_u_t = up_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
-        d_l_t = left_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
-        d_d_t = down_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
 end
 
 % gather trials
 idx_tarCh = ismember({merged_lib{cond_i}.std_epoch.chanlocs.labels},tarCh);
 plt_dir_cir = cell(1,4);
-plt_dir_cir{1} = squeeze(plt_cir.data(idx_tarCh,:,d_r_c))';
-plt_dir_cir{2} = squeeze(plt_cir.data(idx_tarCh,:,d_u_c))';
-plt_dir_cir{3} = squeeze(plt_cir.data(idx_tarCh,:,d_l_c))';
-plt_dir_cir{4} = squeeze(plt_cir.data(idx_tarCh,:,d_d_c))';
+plt_dir_cir{1} = squeeze(merged_lib{cond_i}.(plt_cir).data(idx_tarCh,:,right_idx_cir))';
+plt_dir_cir{2} = squeeze(merged_lib{cond_i}.(plt_cir).data(idx_tarCh,:,up_idx_cir))';
+plt_dir_cir{3} = squeeze(merged_lib{cond_i}.(plt_cir).data(idx_tarCh,:,left_idx_cir))';
+plt_dir_cir{4} = squeeze(merged_lib{cond_i}.(plt_cir).data(idx_tarCh,:,down_idx_cir))';
 plt_dir_tri = cell(1,4);
-plt_dir_tri{1} = squeeze(plt_tri.data(idx_tarCh,:,d_r_t))';
-plt_dir_tri{2} = squeeze(plt_tri.data(idx_tarCh,:,d_u_t))';
-plt_dir_tri{3} = squeeze(plt_tri.data(idx_tarCh,:,d_l_t))';
-plt_dir_tri{4} = squeeze(plt_tri.data(idx_tarCh,:,d_d_t))';
+plt_dir_tri{1} = squeeze(merged_lib{cond_i}.(plt_tri).data(idx_tarCh,:,right_idx_tri))';
+plt_dir_tri{2} = squeeze(merged_lib{cond_i}.(plt_tri).data(idx_tarCh,:,up_idx_tri))';
+plt_dir_tri{3} = squeeze(merged_lib{cond_i}.(plt_tri).data(idx_tarCh,:,left_idx_tri))';
+plt_dir_tri{4} = squeeze(merged_lib{cond_i}.(plt_tri).data(idx_tarCh,:,down_idx_tri))';
 
 figure
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
@@ -574,7 +550,7 @@ for p_i = 1:4
 %     set(gca,'xticklabels',plt_t(1:25:length(plt_t)));
 %     set(gca,'ytick',1.5:size(plt_result,1)+0.5);
 %     set(gca,'yticklabels',select_ch);
-    title([ev_name,'-',dir_name{p_i}],'fontsize',20)
+    title(dir_name{p_i},'fontsize',20)
 end
 linkaxes([ax_lib{:}],'y')
 
