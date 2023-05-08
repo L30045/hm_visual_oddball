@@ -1,7 +1,7 @@
 %% New file (Biosemi)
 filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
 loadpath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
-savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/'; % Correct the synchronization issue in epoch_ez and create new epoch.
+savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/20230424_new/'; % Correct the synchronization issue in epoch_ez and create new epoch.
 
 subpath = {dir(['sub*']).name};
 
