@@ -6,12 +6,19 @@ load([filepath,'epoch_lib_rmPreStim_new.mat']);
 disp('Done')
 
 %% remove those don't have fixation
+filepath = 'D:\Research\oddball_epoch\';
+subj_list = cellfun(@(x) x(end-7:end-4),{dir([filepath, 'rmPreStim*']).name},'uniformoutput',0);
 [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
 % include subject without grab event (all subjects are included)
 preserve_idx = sum(fix_subj_idx,1)==2;
 % & sum(grab_subj_idx,1)==2;
-% remove subject 9
-preserve_idx([5,8,9]) = 0;
+% remove 1998 2029
+rm_subj = {'1998','2029'};
+preserve_idx(ismember(subj_list,rm_subj)) = 0;
+% preserve_subj = {'1145','1151','1988','1997','2000','2004','2022','2031','2050','2056'};
+% preserve_idx(~ismember(subj_list,preserve_subj)) = 0;
+subj_list = subj_list(preserve_idx);
+
 
 %% find cross channels
 % Rename channels label
@@ -231,7 +238,7 @@ disp('Done')
 
 %% topo
 eeg_array = [];
-cond_i = 1;
+cond_i = 2;
 tmp_cir = pop_select(merged_lib{cond_i}.std_epoch,'channel',select_ch);
 tmp_cir.setname = 'stim circle';
 tmp_tri = pop_select(merged_lib{cond_i}.dev_epoch,'channel',select_ch);
@@ -256,7 +263,7 @@ plt_idx = 3;
 pop_comperp(eeg_array, 1, plt_idx*2-1,plt_idx*2,'addavg','on','addstd','off','subavg','on','diffavg','on','diffstd','off','alpha',0.05,'tplotopt',{'ydir',1});
 
 %% plot ERP
-tarCh = 'CPz';
+tarCh = 'Cz';
 lock_name = 'stim';
 cond_name = 'Hm';
 switch cond_name
@@ -319,7 +326,7 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(2);
+plt_EEG = eeg_array(3);
 tarCh = 'Cz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
@@ -333,7 +340,7 @@ figure; pop_erpimage(plt_EEG,1,[idx_tarCh],[[]],tarCh,smooth,1,sort_ev,[],...
     { [idx_tarCh] plt_EEG.chanlocs plt_EEG.chaninfo },'caxis',clim);
 
 %% ERP comparison
-tarCh = 'Cz';
+tarCh = 'CPz';
 method = @mean;
 plt_EEG = eeg_array(5);
 plt_t = plt_EEG.times;
@@ -402,7 +409,7 @@ end
 
 
 %%  Cross subjects result with merge_lib
-tarCh = 'Cz';
+tarCh = 'Oz';
 var_thres = 0.95;
 trial_name = fieldnames(merged_lib{1}.nb_trial);
 epoch_name = {'std_epoch','dev_epoch',trial_name{3:end}};
@@ -600,7 +607,7 @@ for cond_i = 1:2
         pop_erpimage(plt_EEG,1,idx_tarCh,[[]],tarCh,smooth,1,{},[],'' ,...
                     'yerplabel','\muV','erp','on','cbar','on','topo',...
                     {[idx_tarCh] plt_EEG.chanlocs plt_EEG.chaninfo } );
-        saveas(gcf,[savepath, sprintf('FRP_%s_%s_s%02d.png',tarCh,condname,subj_i)]);
+        saveas(gcf,[savepath, sprintf('FRP_%s_%s_%s.png',tarCh,condname,subj_list{subj_i})]);
         close(gcf)
     end
 end
