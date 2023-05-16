@@ -6,10 +6,19 @@ load([filepath,'epoch_lib_rmPreStim_new.mat']);
 disp('Done')
 
 %% remove those don't have fixation
+filepath = 'D:\Research\oddball_epoch\';
+subj_list = cellfun(@(x) x(end-7:end-4),{dir([filepath, 'rmPreStim*']).name},'uniformoutput',0);
 [fix_subj_idx, grab_subj_idx] = find_if_device(epoch_lib);
-preserve_idx = sum(fix_subj_idx,1)==2 & sum(grab_subj_idx,1)==2;
-% remove subject 9
-preserve_idx([5,9]) = 0;
+% include subject without grab event (all subjects are included)
+preserve_idx = sum(fix_subj_idx,1)==2;
+% & sum(grab_subj_idx,1)==2;
+% remove 1998 2029
+rm_subj = {'1998','2029'};
+preserve_idx(ismember(subj_list,rm_subj)) = 0;
+% preserve_subj = {'1145','1151','1988','1997','2000','2004','2022','2031','2050','2056'};
+% preserve_idx(~ismember(subj_list,preserve_subj)) = 0;
+subj_list = subj_list(preserve_idx);
+
 
 %% find cross channels
 % Rename channels label
@@ -74,7 +83,7 @@ disp('Done')
 %% plot channel ERP
 figure
 tar_ch = 'Cz';
-select_subj = [1:3,5,6,8:13];
+select_subj = true(1,size(plt_epoch_lib,2));
 % select_subj = 1:13;
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 % shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
@@ -202,8 +211,8 @@ t_name = reshape(repmat({'Stim','GIP','Fix'},2,1),1,[]);
 for p_i = 1:6
     ax_lib{p_i} = subplot(3,2,p_i);
     plt_result = ttest_lib{p_i};
-%     plt_result = pval_lib{p_i};
-%     plt_result(plt_result>0.05) = nan;
+    plt_result = pval_lib{p_i};
+    plt_result(plt_result>0.05) = nan;
     plt_t = plt_t_lib{p_i};
     h = pcolor([plt_result,nan(size(plt_result,1),1);nan(1,size(plt_result,2)+1)]);
     hold on
@@ -223,6 +232,7 @@ end
 
 %% merge EEG for EEGLAB function
 plt_epoch_lib = epoch_lib(:,preserve_idx);
+nb_subj = size(plt_epoch_lib,2);
 merged_lib = merge_epoch_lib(plt_epoch_lib,select_ch);
 disp('Done')
 
@@ -253,8 +263,8 @@ plt_idx = 3;
 pop_comperp(eeg_array, 1, plt_idx*2-1,plt_idx*2,'addavg','on','addstd','off','subavg','on','diffavg','on','diffstd','off','alpha',0.05,'tplotopt',{'ydir',1});
 
 %% plot ERP
-tarCh = 'CPz';
-lock_name = 'fix';
+tarCh = 'Cz';
+lock_name = 'stim';
 cond_name = 'Hm';
 switch cond_name
     case 'noHm'
@@ -316,8 +326,8 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(6);
-tarCh = 'CPz';
+plt_EEG = eeg_array(3);
+tarCh = 'Cz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
 rm_trial = var_dist > quantile(var_dist,var_thres);
@@ -330,7 +340,7 @@ figure; pop_erpimage(plt_EEG,1,[idx_tarCh],[[]],tarCh,smooth,1,sort_ev,[],...
     { [idx_tarCh] plt_EEG.chanlocs plt_EEG.chaninfo },'caxis',clim);
 
 %% ERP comparison
-tarCh = 'Cz';
+tarCh = 'CPz';
 method = @mean;
 plt_EEG = eeg_array(5);
 plt_t = plt_EEG.times;
@@ -379,11 +389,30 @@ plt_EEG = pop_rejepoch(plt_EEG,var_dist> quantile(var_dist,var_thres),0);
 plt_EEG_ica = pop_runica(plt_EEG, 'icatype','runica','extended',1);
 plt_EEG_ica = pop_iclabel(plt_EEG_ica,'default');
 
+%% Check number of trial
+trial_name = fieldnames(merged_lib{1}.nb_trial);
+nbtrial_lib = {2,6};
+nbdir_lib = {2,2};
+
+for cond_i = 1:2
+    nb_trial = merged_lib{cond_i}.nb_trial;
+    tmp = zeros(6,nb_subj);
+    for t_i = 1:length(trial_name)
+        tmp(t_i,:) = [nb_trial.(trial_name{t_i})];
+    end
+    nbtrial_lib{cond_i} = tmp;
+    
+    nbdir_lib{cond_i,1} =cellfun(@(x) size(x,2), merged_lib{cond_i}.dir_trial.dir_std);
+    nbdir_lib{cond_i,2} =cellfun(@(x) size(x,2), merged_lib{cond_i}.dir_trial.dir_dev);
+    
+end
+
+
 %%  Cross subjects result with merge_lib
-tarCh = 'CPz';
+tarCh = 'Oz';
 var_thres = 0.95;
 trial_name = fieldnames(merged_lib{1}.nb_trial);
-epoch_name = fieldnames(merged_lib{1});
+epoch_name = {'std_epoch','dev_epoch',trial_name{3:end}};
 plt_lib = cell(2,length(trial_name));
 plt_t_lib = cell(2,length(trial_name));
 for cond_i = 1:2
@@ -410,13 +439,13 @@ shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 ax_lib = cell(1,6);
 t_name = reshape(repmat({'Stim','GIP','Fix'},2,1),1,[]);
 plt_t_lib = reshape(plt_t_lib,[],1);
-plt_lib = reshape(plt_lib,[],1);
+plt_lib = [plt_lib(1,1:2);plt_lib(2,1:2);plt_lib(1,3:4);plt_lib(2,3:4);plt_lib(1,5:6);plt_lib(2,5:6)];
 
 for p_i = 1:6
     ax_lib{p_i} = subplot(3,2,p_i);
     plt_t = plt_t_lib{p_i*2};
-    plt_cir = plt_lib{(p_i-1)*2+1};
-    plt_tri = plt_lib{p_i*2};
+    plt_cir = plt_lib{p_i,1};
+    plt_tri = plt_lib{p_i,2};
     ht = shadedErrorBar(plt_t, plt_tri, shaded_method,'lineprops',...
             {'color','b','linewidth',3,'DisplayName','Standard'});
     ht.patch.FaceAlpha = 0.1;
@@ -437,11 +466,151 @@ for p_i = 1:6
 end
 linkaxes([ax_lib{:}],'y')
 
+%% subject-wise ERPImage
+plt_idx = 6;
+is_std = 1;
+plt_obj = plt_lib{plt_idx, is_std};
+plt_t = plt_t_lib{plt_idx*2};
+[nr, nc] = size(plt_obj);
+figure
+h = pcolor([plt_obj,nan(nr,1);nan(1,nc+1)]);
+set(h,'edgecolor','none')
+hold on
+xline(find(plt_t==0),'k--','linewidth',3)
+set(gca,'xtick',1:25:length(plt_t))
+set(gca,'xticklabels',plt_t(1:25:end))
+set(gca,'ytick',(1:(nc-1))+0.5)
+set(gca,'yticklabels',1:(nc-1))
+xlabel('Time (ms)')
+ylabel('Subject ID')
+set(gca,'fontsize',20)
+colorbar
+colormap('jet')
+title('FIX - Hm - DEV')
+
 
 %% separate into different directions
+cond_i = 1;
+ev_name = 'gip';
+tarCh = 'Oz';
+
+% right, up, left, down
+up_idx_cir = cell2mat(cellfun(@(x) x(2,:), merged_lib{cond_i}.dir_trial.dir_std,'uniformoutput',0));
+right_idx_cir = cell2mat(cellfun(@(x) x(1,:), merged_lib{cond_i}.dir_trial.dir_std,'uniformoutput',0));
+left_idx_cir = cell2mat(cellfun(@(x) x(3,:), merged_lib{cond_i}.dir_trial.dir_std,'uniformoutput',0));
+down_idx_cir = cell2mat(cellfun(@(x) x(4,:), merged_lib{cond_i}.dir_trial.dir_std,'uniformoutput',0));
+up_idx_tri = cell2mat(cellfun(@(x) x(2,:), merged_lib{cond_i}.dir_trial.dir_dev,'uniformoutput',0));
+right_idx_tri = cell2mat(cellfun(@(x) x(1,:), merged_lib{cond_i}.dir_trial.dir_dev,'uniformoutput',0));
+left_idx_tri = cell2mat(cellfun(@(x) x(3,:), merged_lib{cond_i}.dir_trial.dir_dev,'uniformoutput',0));
+down_idx_tri = cell2mat(cellfun(@(x) x(4,:), merged_lib{cond_i}.dir_trial.dir_dev,'uniformoutput',0));
+
+switch ev_name
+    case 'stim'
+        plt_cir = merged_lib{cond_i}.std_epoch;
+        plt_tri = merged_lib{cond_i}.dev_epoch;
+        plt_t = merged_lib{cond_i}.std_epoch.times;
+        d_r_c = right_idx_cir;
+        d_u_c = up_idx_cir;
+        d_l_c = left_idx_cir;
+        d_d_c = down_idx_cir;
+        d_r_t = right_idx_tri;
+        d_u_t = up_idx_tri;
+        d_l_t = left_idx_tri;
+        d_d_t = down_idx_tri;
+    case 'gip'
+        plt_cir = merged_lib{cond_i}.gip_std;
+        plt_tri = merged_lib{cond_i}.gip_dev;
+        plt_t = merged_lib{cond_i}.gip_std.times;
+        d_r_c = right_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
+        d_u_c = up_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
+        d_l_c = left_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
+        d_d_c = down_idx_cir(~isnan(merged_lib{cond_i}.event_time.gipStd_time));
+        d_r_t = right_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
+        d_u_t = up_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
+        d_l_t = left_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
+        d_d_t = down_idx_tri(~isnan(merged_lib{cond_i}.event_time.gipDev_time));
+    case 'fix'
+        plt_cir = merged_lib{cond_i}.fix_std;
+        plt_tri = merged_lib{cond_i}.fix_dev;
+        plt_t = merged_lib{cond_i}.fix_std.times;
+        d_r_c = right_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
+        d_u_c = up_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
+        d_l_c = left_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
+        d_d_c = down_idx_cir(~isnan(merged_lib{cond_i}.event_time.fixStd_time));
+        d_r_t = right_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
+        d_u_t = up_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
+        d_l_t = left_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
+        d_d_t = down_idx_tri(~isnan(merged_lib{cond_i}.event_time.fixDev_time));
+end
+
+% gather trials
+idx_tarCh = ismember({merged_lib{cond_i}.std_epoch.chanlocs.labels},tarCh);
+plt_dir_cir = cell(1,4);
+plt_dir_cir{1} = squeeze(plt_cir.data(idx_tarCh,:,d_r_c))';
+plt_dir_cir{2} = squeeze(plt_cir.data(idx_tarCh,:,d_u_c))';
+plt_dir_cir{3} = squeeze(plt_cir.data(idx_tarCh,:,d_l_c))';
+plt_dir_cir{4} = squeeze(plt_cir.data(idx_tarCh,:,d_d_c))';
+plt_dir_tri = cell(1,4);
+plt_dir_tri{1} = squeeze(plt_tri.data(idx_tarCh,:,d_r_t))';
+plt_dir_tri{2} = squeeze(plt_tri.data(idx_tarCh,:,d_u_t))';
+plt_dir_tri{3} = squeeze(plt_tri.data(idx_tarCh,:,d_l_t))';
+plt_dir_tri{4} = squeeze(plt_tri.data(idx_tarCh,:,d_d_t))';
+
+figure
+shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
+% shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
+ax_lib = cell(1,4);
+dir_name = {'right','up','left','down'};
+for p_i = 1:4
+    ax_lib{p_i} = subplot(2,2,p_i);
+    plt_cir = plt_dir_cir{p_i};
+    plt_tri = plt_dir_tri{p_i};
+    ht = shadedErrorBar(plt_t, plt_tri, shaded_method,'lineprops',...
+            {'color','b','linewidth',3,'DisplayName','Standard'});
+    ht.patch.FaceAlpha = 0.1;
+    hold on
+    grid on
+    hc = shadedErrorBar(plt_t, plt_cir, shaded_method,'lineprops',...
+            {'color','r','linewidth',3,'DisplayName','Standard'});
+    hc.patch.FaceAlpha = 0.1;
+    xlabel('Time (ms)')
+    ylabel('Amplitude (\muV)')
+    xline(0,'k','linewidth',3)
+    set(gcf,'color','w')
+    set(gca,'xtick',plt_t(1:25:end));
+%     set(gca,'xticklabels',plt_t(1:25:length(plt_t)));
+%     set(gca,'ytick',1.5:size(plt_result,1)+0.5);
+%     set(gca,'yticklabels',select_ch);
+    title([ev_name,'-',dir_name{p_i}],'fontsize',20)
+end
+linkaxes([ax_lib{:}],'y')
 
 
 
+
+
+%% Check Fixation related potential on Oz
+tarCh = 'Oz';
+smooth = 10;
+savepath = 'D:\Research\oddball_fig\FRP_check_20230430\';
+for cond_i = 1:2
+    switch cond_i
+        case 1
+            condname = 'noHm';
+        case 2
+            condname = 'Hm';
+    end
+    for subj_i = 1:size(plt_epoch_lib,2)
+        plt_EEG = plt_epoch_lib{cond_i,subj_i}.fix_epoch;
+        idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
+        figure; 
+        pop_erpimage(plt_EEG,1,idx_tarCh,[[]],tarCh,smooth,1,{},[],'' ,...
+                    'yerplabel','\muV','erp','on','cbar','on','topo',...
+                    {[idx_tarCh] plt_EEG.chanlocs plt_EEG.chaninfo } );
+        saveas(gcf,[savepath, sprintf('FRP_%s_%s_%s.png',tarCh,condname,subj_list{subj_i})]);
+        close(gcf)
+    end
+end
 
 
 
