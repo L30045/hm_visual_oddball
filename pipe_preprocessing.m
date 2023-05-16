@@ -5,8 +5,9 @@
 % bad channel removal
 % ASR with cutoff parameter k = 10
 
-savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/';
+savepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/preproc_data_ASR5/';
+filepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/oddball/';
+filename_list = {dir([loadpath,'*Oddball*.xdf']).name};
 
 %% Without head movement
 subj_list = [1,4:6,8:10];

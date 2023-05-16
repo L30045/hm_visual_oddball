@@ -78,8 +78,11 @@ end
 
 %% find out stimulus onset time
 if ~strcmp(EEG.filename(1),'s')
+    idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type}); 
     idx_dev = cellfun(@(x) ~isempty(regexp(x, '\(R\)', 'ONCE')), {EEG.event.type});
     idx_std = cellfun(@(x) ~isempty(regexp(x, '\(L\)', 'ONCE')), {EEG.event.type});
+    idx_std = idx_std & idx_cond;
+    idx_dev = idx_dev & idx_cond;
 else
     idx_cond = cellfun(@(x) ~isempty(regexp(x, reg_txt, 'ONCE')), {EEG.event.type}); 
     idx_dev = cellfun(@(x) ~isempty(regexp(x, 'Deviant', 'ONCE')), {EEG.event.type});

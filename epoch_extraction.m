@@ -1,15 +1,11 @@
 %% New file (Biosemi)
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/preproc_data/';
-loadpath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/oddball/';
-savepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/'; % Correct the synchronization issue in epoch_ez and create new epoch.
+filepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/preproc_data_ASR10/';
+loadpath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/oddball/';
+savepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/20230508/'; % Correct the synchronization issue in epoch_ez and create new epoch.
+if ~exist(savepath,'dir')
+    mkdir(savepath)
+end
 
-subpath = {dir(['sub*']).name};
-
-for j = 1:length(subpath)
-filepath = sprintf('%s/',subpath{j});
-loadpath = filepath;
-savepath = [pwd,'/'];
-    
 filename_list = reshape({dir([loadpath,'*Oddball*.xdf']).name},2,[])';
 inner_list = filename_list(:,1);
 outer_list = filename_list(:,2);
@@ -17,8 +13,8 @@ inner_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,1),
 outer_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,2),'uniformoutput',0);
 
 for i = 1:size(filename_list,1)
-    EEG_noHm = pop_loadset([filepath,inner_data{i}]);
-    EEG_Hm = pop_loadset([filepath,outer_data{i}]);
+    EEG_noHm = pop_loadset([filepath,filesep,inner_data{i}]);
+    EEG_Hm = pop_loadset([filepath,filesep,outer_data{i}]);
     [epoch_struct_noHm, ~]...
     = epoch_ez_v3([loadpath,inner_list{i}], EEG_noHm);
     [epoch_struct_Hm, ~]...
@@ -26,7 +22,7 @@ for i = 1:size(filename_list,1)
     parsave([savepath,sprintf('rmPreStim_new_s%02d_epoch_%s.mat',i,inner_list{i}(1:4))],epoch_struct_noHm,epoch_struct_Hm);
 end
 
-end
+
 disp('Done')
 
 %% Old file (Smarting)
@@ -48,7 +44,7 @@ end
 disp('Done')
 
 %% save epoch_lib
-filepath = '/home/yuan/Documents/2021 HM_visual_oddball/dataset/new epoch/';
+filepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/20230508/';
 subj_list = {dir([filepath, 'rmPreStim*']).name};
 savepath = filepath;
 
