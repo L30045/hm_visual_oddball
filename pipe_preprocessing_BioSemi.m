@@ -3,9 +3,9 @@ eegpath = which('eeglab.m');
 eegpath = eegpath(1:end-8);
 
 %% load data
-savepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/preproc_data_ASR5/';
+savepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/preproc_data_ASR10/';
 filepath = '/data/projects/yuan/2021 HM_visual_oddball/dataset/oddball/';
-filename_list = {dir([loadpath,'*Oddball*.xdf']).name};
+filename_list = {dir([filepath,'*Oddball*.xdf']).name};
 
 
 %% preprocessing
@@ -44,7 +44,7 @@ parfor i = 1:length(filename_list)
     highPassBand = -1;
     thresPoorCorrChannel = 0.7;
     thresLineNoiseChannel = 4;
-    thresASR = 5;
+    thresASR = 10;
     thresWindow = -1;
     EEG = clean_rawdata(EEG, thresFlatChannel, highPassBand, thresPoorCorrChannel, thresLineNoiseChannel, thresASR, thresWindow);
 
@@ -56,7 +56,7 @@ parfor i = 1:length(filename_list)
     EEG = pop_subcomp(EEG_ica,find(EEG_ica.reject.gcompreject));
 
     % savefile
-    pop_saveset(EEG, [savepath,filename(1:end-4),'_resample_250Hz_ASR5']);
+    pop_saveset(EEG, [savepath,filename(1:end-4),'_resample_250Hz_ASR10']);
     % fprintf('Completed %s\n',filename{i});
 end
 

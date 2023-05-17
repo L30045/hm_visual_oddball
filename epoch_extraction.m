@@ -9,8 +9,8 @@ end
 filename_list = reshape({dir([loadpath,'*Oddball*.xdf']).name},2,[])';
 inner_list = filename_list(:,1);
 outer_list = filename_list(:,2);
-inner_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,1),'uniformoutput',0);
-outer_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz.set'],filename_list(:,2),'uniformoutput',0);
+inner_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz_ASR10.set'],filename_list(:,1),'uniformoutput',0);
+outer_data = cellfun(@(x) [x(1:end-4),'_resample_250Hz_ASR10.set'],filename_list(:,2),'uniformoutput',0);
 
 for i = 1:size(filename_list,1)
     EEG_noHm = pop_loadset([filepath,filesep,inner_data{i}]);
