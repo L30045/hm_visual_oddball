@@ -281,14 +281,13 @@ end
 %% plot above figure into a big subplot
 % ylabel_name = 'Angular (deg/s)';
 ylabel_name = 'Angle (deg)';
-plt_lib_std = reshape(reshape(ang_lib(1,:),3,2)',[],1); % for 3 by 2 subplot
-plt_lib_dev = reshape(reshape(ang_lib(2,:),3,2)',[],1); % for 3 by 2 subplot
+plt_lib_std = reshape(reshape(v_ang_lib(1,:),3,2)',[],1); % for 3 by 2 subplot
+plt_lib_dev = reshape(reshape(v_ang_lib(2,:),3,2)',[],1); % for 3 by 2 subplot
 % plt_lib = subplot_lib; % for 2 by 3 subplot
 ev_name = {'stim','stim','gip','gip','fix','fix'};
 fig = figure('units','normalized','outerposition',[0.1 0.1 0.9 0.9]);
 ax_lib = cell(1,6);
 plt_time_idx = [-500 1000];
-shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
 for p_i = 1:6
     ax_lib{p_i} = subplot(3,2,p_i);
     plt_t = plt_lib_std{p_i}{1};
@@ -296,13 +295,13 @@ for p_i = 1:6
     plt_t = plt_t(plt_idx);
     plt_h_a = plt_lib_std{p_i}{2}(plt_idx,:);
     plt_e_a = plt_lib_std{p_i}{3}(plt_idx,:);
-%     plt_g_a = plt_lib_std{p_i}{4}(plt_idx,:);
+    plt_g_a = plt_lib_std{p_i}{4}(plt_idx,:);
     plt_dist = plt_lib_std{p_i}{5}(plt_idx,:);
     
     shadedErrorBar(plt_t,plt_e_a', shaded_method, 'lineprops',{'b-','DisplayName','Eye','linewidth',3});
     grid on; hold on;
     shadedErrorBar(plt_t,plt_h_a', shaded_method, 'lineprops',{'r-','DisplayName','Head','linewidth',3})
-%     shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','Gaze','linewidth',3})
+    shadedErrorBar(plt_t,plt_g_a', shaded_method, 'lineprops',{'k-','DisplayName','Gaze','linewidth',3})
     shadedErrorBar(plt_t,plt_dist', shaded_method, 'lineprops',{'g-','DisplayName','Dist.','linewidth',3})
     xline(0,'k-','linewidth',3,'DisplayName','Event onset');
     set(gca,'fontsize',20)
@@ -321,7 +320,6 @@ for p_i = 1:6
     if ismember(p_i,[5,6])
         xlabel('Time (ms)')
     end
-    set(gca,'XTickLabelRotation',-45)
 end
 % linkaxes([ax_lib{:}],'y')
 

@@ -328,7 +328,7 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(6);
+plt_EEG = eeg_array(5);
 tarCh = 'Cz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
@@ -620,7 +620,7 @@ rng('default');
 cond_i = 2;
 ev_name = 'fix';
 tarCh = 'Cz';
-time_range = [150,250];
+time_range = [0,200];
 switch cond_i
     case 1
         cond_name = 'noHm';
@@ -636,7 +636,6 @@ switch ev_name
         plt_cir = pop_select(merged_lib{cond_i}.gip_std,'channel',{tarCh});
         plt_tri = pop_select(merged_lib{cond_i}.gip_dev,'channel',{tarCh});
         tname = 'GIP';
-%         peak_polar = true(size(t_interest,1),1);
     case 'fix'
         plt_cir = pop_select(merged_lib{cond_i}.fix_std,'channel',{tarCh});
         plt_tri = pop_select(merged_lib{cond_i}.fix_dev,'channel',{tarCh});
@@ -660,15 +659,13 @@ figure
 % ht = shadedErrorBar(plt_t, align_epoch_tri, shaded_method,'lineprops',...
 %             {'color','b','linewidth',3,'DisplayName','Standard'});
 % ht.patch.FaceAlpha = 0.1;
-plot(plt_t(plt_idx), mean(align_epoch_tri(:,plt_idx),1),'b','linewidth',3,'DisplayName',...
-    sprintf('Standard (%d/%d)',sum(~isnan(lat_lib_tri)),length(lat_lib_tri)))
+plot(plt_t(plt_idx), mean(align_epoch_tri(:,plt_idx),1),'b','linewidth',3,'DisplayName',sprintf('Standard (%d/%d)',sum(~isnan(lat_lib_tri)),))
 hold on
 grid on
 % hc = shadedErrorBar(plt_t, align_epoch_cir, shaded_method,'lineprops',...
 %             {'color','r','linewidth',3,'DisplayName','Deviant'});
 % hc.patch.FaceAlpha = 0.1;
-plot(plt_t(plt_idx), mean(align_epoch_cir(:,plt_idx),1),'r','linewidth',3,'DisplayName',...
-    sprintf('Deviant (%d/%d)',sum(~isnan(lat_lib_cir)),length(lat_lib_cir)))
+plot(plt_t(plt_idx), mean(align_epoch_cir(:,plt_idx),1),'r','linewidth',3,'DisplayName','Deviant')
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
 xline(0,'k','linewidth',3)
