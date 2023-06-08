@@ -263,14 +263,14 @@ for cond_i = 1:2
                  diff_gip_dev > thres_lat(cond_i,2);
 %                  diff_fix_dev < thres_lat(cond_i,1)
 %                  diff_fix_dev > thres_lat(cond_i,2);
-    merged_lib{cond_i}.dev_epoch = pop_rejepoch(merged_lib{cond_i}.std_epoch, rm_dev_idx,0);
+    merged_lib{cond_i}.dev_epoch = pop_rejepoch(merged_lib{cond_i}.dev_epoch, rm_dev_idx,0);
     merged_lib{cond_i}.gip_dev = pop_rejepoch(merged_lib{cond_i}.gip_dev, rm_dev_idx(~isnan(diff_gip_dev)),0);
     merged_lib{cond_i}.fix_dev = pop_rejepoch(merged_lib{cond_i}.fix_dev, rm_dev_idx(~isnan(diff_fix_dev)),0);
 end
 
 %% topo
 eeg_array = [];
-cond_i = 1;
+cond_i = 2;
 tmp_cir = pop_select(merged_lib{cond_i}.std_epoch,'channel',select_ch);
 tmp_cir.setname = 'stim circle';
 tmp_tri = pop_select(merged_lib{cond_i}.dev_epoch,'channel',select_ch);
@@ -358,7 +358,7 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(2);
+plt_EEG = eeg_array(5);
 tarCh = 'Cz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
