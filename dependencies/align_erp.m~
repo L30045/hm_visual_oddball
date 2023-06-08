@@ -9,8 +9,11 @@ function [align_epoch, amp_lib, lat_lib, idx_rm_epoch, reg_mat] = align_erp(epoc
 %       t_interest:     time period of interest. Multiple time periods of 
 %                       interest should put into a matrix row by row. (default: 0 - 200 ms)
 
+%       reg_epoch:      epoch to calculated regressors (use epoch if reg_epoch is empty)
+
 %       peak_polar:     positive or negative peak to look for. Length should be
 %                       the same as the number of t_interest. (default: all positive)
+%                       TODO: Use auto correlation
 
 %       nb_PC:          number of principal component to use as regressors (default: 3)
 
@@ -37,6 +40,7 @@ p.KeepUnmatched = true;
 addRequired(p,'epoch');
 addRequired(p,'times');
 addOptional(p,'t_interest',[0 200]) % ms (time period of interest)
+addOptional(p,'reg_epoch',[]) % ms (time period of interest)
 addOptional(p,'peak_polar',[]) % positve/ negative peak to look for
 addOptional(p,'nb_PC',3) % number of principal component to use as regressors
 addOptional(p,'mvavg_winlen',10) % number of epoch in a window when performing moving average
@@ -137,10 +141,13 @@ end
 %%===== fix here =====
 
 %% align epochs
+rng(1);
 if isempty(t_align)
     t_align = 1;
 end
 t_delay= lat_lib(:,t_align) - round(nanmean(lat_lib(:,t_align)));
+% remove epoch with t_delay more than 50ms
+lat_lib(abs(t_delay)>50,t_align) = NaN;
 
 align_epoch = zeros(size(epoch));
 
@@ -157,7 +164,7 @@ for i = 1:size(reg_epoch,1)
 end
 % remove epoch with no peak in the t_align period
 idx_rm_epoch = isnan(t_delay);
-% remove epoch with 
+
 align_epoch(idx_rm_epoch,:) = [];
 
 end

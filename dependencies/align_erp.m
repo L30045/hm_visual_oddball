@@ -9,8 +9,11 @@ function [align_epoch, amp_lib, lat_lib, idx_rm_epoch, reg_mat] = align_erp(epoc
 %       t_interest:     time period of interest. Multiple time periods of 
 %                       interest should put into a matrix row by row. (default: 0 - 200 ms)
 
+%       ref_epoch:      epoch to calculated regressors (use epoch if reg_epoch is empty)
+
 %       peak_polar:     positive or negative peak to look for. Length should be
 %                       the same as the number of t_interest. (default: all positive)
+%                       TODO: Use auto correlation
 
 %       nb_PC:          number of principal component to use as regressors (default: 3)
 
@@ -37,6 +40,7 @@ p.KeepUnmatched = true;
 addRequired(p,'epoch');
 addRequired(p,'times');
 addOptional(p,'t_interest',[0 200]) % ms (time period of interest)
+addOptional(p,'ref_epoch',[])
 addOptional(p,'peak_polar',[]) % positve/ negative peak to look for
 addOptional(p,'nb_PC',3) % number of principal component to use as regressors
 addOptional(p,'mvavg_winlen',10) % number of epoch in a window when performing moving average
@@ -49,6 +53,7 @@ parse(p,epoch,times,varargin{:})
 epoch = p.Results.epoch;
 times = p.Results.times;
 t_interest = p.Results.t_interest;
+ref_epoch = p.Results.ref_epoch;
 peak_polar = p.Results.peak_polar;
 nb_PC = p.Results.nb_PC;
 mvavg_winlen = p.Results.mvavg_winlen;
@@ -57,6 +62,10 @@ peak_winlen = p.Results.peak_winlen;
 % transpose epoch matrix if it is not trial by time
 if size(epoch,2)~=length(times)
     epoch = epoch';
+end
+% assign reg_epoch
+if isempty(ref_epoch)
+    ref_epoch = epoch;
 end
 % assign peak_polar
 if isempty(peak_polar)
@@ -67,9 +76,9 @@ end
 %% Finding PC regressors
 % perform moving average on single epoch matrix to reduce noises for the
 % following PCA process
-random_group = randperm(size(epoch,1));
-sort_epoch = epoch(random_group,:);
-mvavg_idx = discretize(1:size(sort_epoch,1),ceil(size(sort_epoch,1)/mvavg_winlen));
+random_group = randperm(size(ref_epoch,1));
+sort_epoch = ref_epoch(random_group,:);
+mvavg_idx = discretize((1:size(sort_epoch,1))-0.5,ceil(size(sort_epoch,1)/mvavg_winlen));
 mvavg_epoch = zeros(max(mvavg_idx), size(sort_epoch,2));
 for i = 1:max(mvavg_idx)
     mvavg_epoch(i,:) = mean(sort_epoch(mvavg_idx==i,:));

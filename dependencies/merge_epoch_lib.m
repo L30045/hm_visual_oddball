@@ -31,7 +31,7 @@ for subj_i = 1:size(epoch_lib,2)
             tmp_dir_std(:,end) = [];
         end
         if size(tmp_dir_dev,2)~=dev_epoch.trials
-            error(fprintf('%d, %d',cond_i, subj_i));
+            error('%d, %d',cond_i, subj_i);
         end
         gip_std = pop_select(tmp_epoch.gip_std,'channel',tarCh);
         gip_dev = pop_select(tmp_epoch.gip_dev,'channel',tarCh);

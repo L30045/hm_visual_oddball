@@ -13,7 +13,7 @@ subj_list = cellfun(@(x) x(end-7:end-4),{dir([filepath, 'rmPreStim*']).name},'un
 preserve_idx = sum(fix_subj_idx,1)==2;
 % & sum(grab_subj_idx,1)==2;
 % remove 1998 2029
-rm_subj = {'1998','2029','2059'};
+rm_subj = {'1998','2029','2059','2085'};
 rm_noFRP = {'2057','2030','2050'};
 preserve_idx(ismember(subj_list,rm_subj)) = 0;
 % preserve_subj = {'1145','1151','1988','1997','2000','2004','2022','2031','2050','2056'};
@@ -53,7 +53,7 @@ shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 savepath = 'D:\Research\oddball_fig\xSubj\mean ERP\';
 
 ch_lib = cell(1,length(select_ch));
-for tarch_i = 1:length(select_ch)
+parfor tarch_i = 1:length(select_ch)
     subplot_lib = cell(1,6);
     count = 1;
     for cond_i = 1:2
@@ -114,6 +114,9 @@ for p_i = 1:6
     set(gca,'xtick',plt_t(1:25:end));
     set(gca,'xticklabels',plt_t(1:25:length(plt_t)));
 
+    %======= stat test
+    plt_idx = plt_t >= plt_time_idx(1) & plt_t<=plt_time_idx(2);
+    plot(plt_t(plt_idx),ttest_lib{p_i},'kx','linewidth',3);
     %======= pcolor
 %     [nr, nc] = size(plt_cir);
 %     ht = pcolor([plt_cir,nan(nr,1);nan(1,nc+1)]);
@@ -130,10 +133,11 @@ ttest_lib = cell(1,6);
 pval_lib = cell(1,6);
 plt_t_lib = cell(1,6);
 plt_time_idx = [-500 1000];
-test_time_idx = [200 600];
-is_ttest = false;
+test_time_idx = [-100 1000];
+is_ttest = true;
 is_correct = true;
-sub_ch = {'Cz','CPz','Pz','POz','Oz'};
+% sub_ch = {'Cz','CPz','Pz','POz','Oz'};
+sub_ch = {'Cz'};
 sub_ch_idx = ismember(select_ch,sub_ch);
 sub_ch_lib = ch_lib(sub_ch_idx);
 
@@ -213,8 +217,8 @@ t_name = reshape(repmat({'Stim','GIP','Fix'},2,1),1,[]);
 for p_i = 1:6
     ax_lib{p_i} = subplot(3,2,p_i);
     plt_result = ttest_lib{p_i};
-    plt_result = pval_lib{p_i};
-    plt_result(plt_result>0.05) = nan;
+%     plt_result = pval_lib{p_i};
+%     plt_result(plt_result>0.05) = nan;
     plt_t = plt_t_lib{p_i};
     h = pcolor([plt_result,nan(size(plt_result,1),1);nan(1,size(plt_result,2)+1)]);
     hold on
@@ -237,10 +241,36 @@ plt_epoch_lib = epoch_lib(:,preserve_idx);
 nb_subj = size(plt_epoch_lib,2);
 merged_lib = merge_epoch_lib(plt_epoch_lib,select_ch);
 disp('Done')
+ori_merged_lib = merged_lib;
+
+%% remove trials with latency between stimulus and events in range of 400 ms to 100 ms
+thres_lat = [50, 400; 100, 600];
+for cond_i = 1:2
+    event_time = merged_lib{cond_i}.event_time;
+    diff_gip_std = event_time.gipStd_time - event_time.std_time;
+    diff_gip_dev = event_time.gipDev_time - event_time.dev_time;
+    diff_fix_std = event_time.fixStd_time - event_time.std_time;
+    diff_fix_dev = event_time.fixDev_time - event_time.dev_time;
+    
+    rm_std_idx = diff_gip_std < thres_lat(cond_i,1) |...
+                 diff_gip_std > thres_lat(cond_i,2) |...
+                 diff_fix_std < thres_lat(cond_i,1) |...
+                 diff_fix_std > thres_lat(cond_i,2);
+    merged_lib{cond_i}.std_epoch = pop_rejepoch(merged_lib{cond_i}.std_epoch, rm_std_idx);
+    merged_lib{cond_i}.gip_std = pop_rejepoch(merged_condlib{cond_i}.gip_std, rm_std_idx(~isnan(diff_gip_std)));
+    merged_lib{cond_i}.fix_std = pop_rejepoch(merged_lib{cond_i}.fix_std, rm_std_idx(~isnan(diff_fix_std)));
+    rm_dev_idx = diff_gip_dev < thres_lat(cond_i,1) |...
+                 diff_gip_dev > thres_lat(cond_i,2) |...
+                 diff_fix_dev < thres_lat(cond_i,1) |...
+                 diff_fix_dev > thres_lat(cond_i,2);
+    merged_lib{cond_i}.dev_epoch = pop_rejepoch(merged_lib{cond_i}.std_epoch, rm_dev_idx);
+    merged_lib{cond_i}.gip_dev = pop_rejepoch(merged_lib{cond_i}.gip_dev, rm_dev_idx(~isnan(diff_gip_dev)));
+    merged_lib{cond_i}.fix_dev = pop_rejepoch(merged_lib{cond_i}.fix_dev, rm_dev_idx(~isnan(diff_fix_dev)));
+end
 
 %% topo
 eeg_array = [];
-cond_i = 2;
+cond_i = 1;
 tmp_cir = pop_select(merged_lib{cond_i}.std_epoch,'channel',select_ch);
 tmp_cir.setname = 'stim circle';
 tmp_tri = pop_select(merged_lib{cond_i}.dev_epoch,'channel',select_ch);
@@ -328,7 +358,7 @@ pop_topoplot(tmp_eeg,1,plt_t_idx ,'Hm fix diff',[5 5] ,0,'electrodes','on');
 smooth = 10;
 var_thres = 0.95;
 clim = [-10 10];
-plt_EEG = eeg_array(5);
+plt_EEG = eeg_array(2);
 tarCh = 'Cz';
 idx_tarCh = find(ismember({plt_EEG.chanlocs.labels},tarCh));
 var_dist = reshape(mean(var(plt_EEG.data(idx_tarCh,:,:),[],2),1),[],1);
@@ -411,7 +441,7 @@ end
 
 
 %%  Cross subjects result with merge_lib
-tarCh = 'Cz';
+tarCh = 'O1';
 var_thres = 0.95;
 trial_name = fieldnames(merged_lib{1}.nb_trial);
 epoch_name = {'std_epoch','dev_epoch',trial_name{3:end}};
@@ -470,7 +500,7 @@ linkaxes([ax_lib{:}],'y')
 
 %% subject-wise ERPImage
 plt_idx = 5;
-is_std = 2;
+is_std = 1;
 plt_obj = plt_lib{plt_idx, is_std};
 plt_t = plt_t_lib{plt_idx*2};
 [nr, nc] = size(plt_obj);
@@ -494,7 +524,7 @@ title('FIX - Hm - DEV')
 %% separate into different directions
 cond_i = 2;
 ev_name = 'fix';
-tarCh = 'Cz';
+tarCh = 'O2';
 
 % right, up, left, down
 up_idx_cir = cell2mat(cellfun(@(x) x(2,:), merged_lib{cond_i}.dir_trial.dir_std,'uniformoutput',0));
@@ -617,10 +647,10 @@ end
 %% alignment
 % aligned by FRP
 rng('default');
-cond_i = 2;
-ev_name = 'fix';
-tarCh = 'Cz';
-time_range = [0,200];
+cond_i = 1;
+ev_name = 'gip';
+tarCh = 'O1';
+time_range = [-200,300];
 switch cond_i
     case 1
         cond_name = 'noHm';
@@ -629,43 +659,64 @@ switch cond_i
 end
 switch ev_name
     case 'stim'
-        plt_cir = pop_select(plt_epoch_lib{cond_i,1}.std_epoch,'channel',{tarCh});
-        plt_tri = pop_select(plt_epoch_lib{cond_i,1}.dev_epoch,'channel',{tarCh});
+        plt_cir = pop_select(merged_lib{cond_i}.std_epoch,'channel',{tarCh});
+        plt_tri = pop_select(merged_lib{cond_i}.dev_epoch,'channel',{tarCh});        
         tname = 'Stim';
     case 'gip'
         plt_cir = pop_select(merged_lib{cond_i}.gip_std,'channel',{tarCh});
         plt_tri = pop_select(merged_lib{cond_i}.gip_dev,'channel',{tarCh});
         tname = 'GIP';
+%         peak_polar = true(size(t_interest,1),1);
     case 'fix'
         plt_cir = pop_select(merged_lib{cond_i}.fix_std,'channel',{tarCh});
         plt_tri = pop_select(merged_lib{cond_i}.fix_dev,'channel',{tarCh});
         tname = 'Fix';
 end
+ref_frp = pop_select(merged_lib{cond_i}.fix_epoch,'channel',{tarCh});
 plt_t = plt_cir.times;
-plt_idx = plt_t>-200;
+plt_idx = plt_t>-500;
 plt_cir = squeeze(plt_cir.data)';
 plt_tri = squeeze(plt_tri.data)';
+ref_frp = squeeze(ref_frp.data)';
 
 
+
+% round(size(ref_frp,1)/10)
 [align_epoch_cir, amp_lib_cir, lat_lib_cir, idx_rm_epoch_cir, reg_mat_cir] = align_erp(plt_cir, plt_t,...
-    't_interest',time_range,'mvavg_winlen',10);
+    't_interest',time_range,'mvavg_winlen',10,'ref_epoch',ref_frp);
 [align_epoch_tri, amp_lib_tri, lat_lib_tri, idx_rm_epoch_tri, reg_mat_tri] = align_erp(plt_tri, plt_t,...
-    't_interest',time_range,'mvavg_winlen',10);
+    't_interest',time_range,'mvavg_winlen',10,'ref_epoch',ref_frp);
+% visualize regressors
+% sanity check on regression
+[align_epoch_ref, amp_lib_ref, lat_lib_ref, idx_rm_epoch_ref, reg_mat_ref] = align_erp(ref_frp, plt_t,...
+    't_interest',time_range,'mvavg_winlen',10,'ref_epoch',ref_frp);
+figure
+plot(plt_t(plt_idx), reg_mat_cir(plt_idx,:), 'linewidth',3, 'DisplayName','Regressors')
+hold on
+grid on 
+xline(time_range(1),'k--','linewidth',3)
+xline(time_range(2),'k--','linewidth',3)
+plot(plt_t(plt_idx),mean(align_epoch_ref(:,plt_idx),1),'r','linewidth',3,'DisplayName',...
+    sprintf('Aligned Ref (%d/%d)',sum(~isnan(lat_lib_ref)),length(lat_lib_ref)))
+plot(plt_t(plt_idx),mean(ref_frp(:,plt_idx),1),'b','linewidth',3,'DisplayName','Avg. Ref')
+legend
 
-
+% visualize aligned ERP
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan'))};
 % shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
 figure
 % ht = shadedErrorBar(plt_t, align_epoch_tri, shaded_method,'lineprops',...
 %             {'color','b','linewidth',3,'DisplayName','Standard'});
 % ht.patch.FaceAlpha = 0.1;
-plot(plt_t(plt_idx), mean(align_epoch_tri(:,plt_idx),1),'b','linewidth',3,'DisplayName',sprintf('Standard (%d/%d)',sum(~isnan(lat_lib_tri)),))
+plot(plt_t(plt_idx), mean(align_epoch_tri(:,plt_idx),1),'b','linewidth',3,'DisplayName',...
+    sprintf('Standard (%d/%d)',sum(~isnan(lat_lib_tri)),length(lat_lib_tri)))
 hold on
 grid on
 % hc = shadedErrorBar(plt_t, align_epoch_cir, shaded_method,'lineprops',...
 %             {'color','r','linewidth',3,'DisplayName','Deviant'});
 % hc.patch.FaceAlpha = 0.1;
-plot(plt_t(plt_idx), mean(align_epoch_cir(:,plt_idx),1),'r','linewidth',3,'DisplayName','Deviant')
+plot(plt_t(plt_idx), mean(align_epoch_cir(:,plt_idx),1),'r','linewidth',3,'DisplayName',...
+    sprintf('Deviant (%d/%d)',sum(~isnan(lat_lib_cir)),length(lat_lib_cir)))
 xlabel('Time (ms)')
 ylabel('Amplitude (\muV)')
 xline(0,'k','linewidth',3)
@@ -675,7 +726,6 @@ legend(findobj(gca,'-regexp','DisplayName', '[^'']'));
 set(gca,'fontsize',20)
 title([ev_name,'-',cond_name],'fontsize',20)
 ylim([-5,5])
-
 
 
 
