@@ -532,7 +532,7 @@ end
 
 
 %%  Cross subjects result with merge_lib
-pltch = {'O1', 'O2', 'Oz', 'CPz', 'Cz'};
+pltch = {'Fz', 'FCz', 'Cz', 'CPz', 'Pz', 'POz', 'Oz'};
 for t_i = 1:length(pltch)
 tarCh = pltch{t_i};
 var_thres = 0.95;
@@ -564,15 +564,30 @@ fig = figure('units','normalized','outerposition',[0 0 1 1]);
 shaded_method = {@(x)(mean(x,'omitnan')), @(x)(std(x,'omitnan')/sqrt(nb_subj))};
 % shaded_method = {@(x)(median(x,'omitnan')),@(x)([quantile(x,0.8)-median(x,'omitnan');median(x,'omitnan')-quantile(x,0.2)])};
 ax_lib = cell(1,6);
+stat_time = [-200,-100;-100,0;0,100;100,250;250,400];
+
 t_name = reshape(repmat({'Stim','GIP','Fix'},2,1),1,[]);
+cond_name = reshape(repmat({'noHm','Hm'},1,3),1,[]);
 plt_t_lib = reshape(plt_t_lib,[],1);
 plt_lib = [plt_lib(1,1:2);plt_lib(2,1:2);plt_lib(1,3:4);plt_lib(2,3:4);plt_lib(1,5:6);plt_lib(2,5:6)];
 title(tarCh)
 for p_i = 1:6
+    amp_lib = cell(size(stat_time,1),2);
     ax_lib{p_i} = subplot(3,2,p_i);
+    select_time = [-200, 800];
     plt_t = plt_t_lib{p_i*2};
-    plt_cir = plt_lib{p_i,1};
-    plt_tri = plt_lib{p_i,2};
+    idx_time = plt_t >= select_time(1) & plt_t<= select_time(2);
+    plt_t = plt_t(idx_time);
+    plt_cir = plt_lib{p_i,1}(:,idx_time);
+    plt_tri = plt_lib{p_i,2}(:,idx_time);
+    % get amplitude
+    for stat_i = 1:size(stat_time,1)
+        idx_test = plt_t >= stat_time(stat_i,1) & plt_t<= stat_time(stat_i,2);
+        amp_lib{stat_i,1} = plt_cir(:,idx_test);
+        amp_lib{stat_i,2} = plt_tri(:,idx_test);
+    end
+%     save(sprintf('/data/projects/yuan/2021 HM_visual_oddball/%s_%s_%s.mat',tarCh,cond_name{p_i},t_name{p_i}),'amp_lib')
+    % plot
     ht = shadedErrorBar(plt_t, plt_tri, shaded_method,'lineprops',...
             {'color','b','linewidth',3,'DisplayName','Standard'});
     ht.patch.FaceAlpha = 0.1;
@@ -597,7 +612,7 @@ for p_i = 1:6
     else
         plt_p = p <= 0.05;
     end
-    plot(plt_t(plt_p), shaded_method{1}(plt_cir(:,plt_p)), 'kx','linewidth',3,'markersize',15)
+%     plot(plt_t(plt_p), shaded_method{1}(plt_cir(:,plt_p)), 'kx','linewidth',3,'markersize',15)
     xlabel('Time (ms)')
     ylabel('Amplitude (\muV)')
     xline(0,'k','linewidth',3)
@@ -609,7 +624,8 @@ for p_i = 1:6
     title(t_name{p_i})
 end
 linkaxes([ax_lib{:}],'y')
-saveas(gcf, [savepath,sprintf('xSubj/xSubjERP_corrected_n200_0_400_800_%s.png',tarCh)])
+% saveas(gcf, [savepath,sprintf('xSubj/xSubjERP_corrected_n200_0_400_800_%s.png',tarCh)])
+saveas(gcf, ['/data/projects/yuan/2021 HM_visual_oddball/hm_visual_oddball-git/tmp/',sprintf('ERP_%s.png',tarCh)])
 close(gcf)
 end
 
